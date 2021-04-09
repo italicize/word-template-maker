@@ -4,7 +4,7 @@ To make a new Word template means defining many styles.
 The easiest way I've found is to write a description of the styles, 
 then run a macro that defines styles like the description.
 
-- [Macro that defines styles]()
+- [Macro that defines styles](https://raw.githubusercontent.com/italicize/word-template-maker/main/sctApplySpecs.bas)
 - [Phrases the macro can read]()
 - [Get started with an example]()
 
