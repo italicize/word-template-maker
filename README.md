@@ -6,7 +6,7 @@ then run a macro that defines styles like the description.
 
 - [Macro that defines styles](https://raw.githubusercontent.com/italicize/word-template-maker/main/sctApplySpecs.bas)
 - [Phrases the macro can read]()
-- [Get started with an example]()
+- [Get started with an example](../report-styles-01.md)
 
 ## Style descriptions
 
