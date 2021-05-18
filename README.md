@@ -12,7 +12,7 @@ then run a macro that defines styles like the description.
 
 Use one of the style descriptions below as a starting point. Add any new ones you write.
 
-- [Technical report 1]() like ANSI's [Scientific and Technical Reports&mdash;Preparation, Presentation, and Preservation](https://www.niso.org/publications/z39.18-2005-r2010).
+- [Technical report 1]() looks like ANSI's [Scientific and Technical Reports&mdash;Preparation, Presentation, and Preservation](https://www.niso.org/publications/z39.18-2005-r2010).
 - 
 - 
 
