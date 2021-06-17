@@ -1,11 +1,12 @@
-Const sctSpecs As Long = 20
 Const sctDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Heading 2, Heading 3, Heading 4, Heading 5, Heading 6, Heading 7, " _
     & "Heading 8, Heading 9, Title, Subtitle, Subtle Emphasis, Emphasis, " _
     & "Intense Emphasis, Strong, Quote, Intense Quote, Subtle Reference, " _
     & "Intense Reference, Book Title, List Paragraph, Caption, TOC Heading"
+    'Those built-in styles appear in the default style gallery in Word 2016.
 
-Sub sctApplySpecs()
+Sub sctReadAndApplyTheStyleDescriptions() 'Best as of 5/28/21
+    
     Dim rngParas As Range, arrParas() As String
     Dim strPara As String, lngPara As Long, lngListPara As Long
     Dim strLabel As String, strLabelLow As String
@@ -17,9 +18,10 @@ Sub sctApplySpecs()
     Dim lngLevel As Long, lngLevels As Long
     Dim objListTemplate As ListTemplate
     
-    'Reads each line in the document.
+    'Saves every line in the document in an array.
     Set rngParas = ActiveDocument.StoryRanges(wdMainTextStory)
     arrParas = sctSaveParagraphsInAnArray(rngParas)
+    'Reads each line in the document by reading the array.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = arrParas(lngPara)
         'Saves the specifications on each line (between commas) in an array.
@@ -28,8 +30,10 @@ Sub sctApplySpecs()
         strLabel = arrSpecs(0)
         strLabelLow = LCase(strLabel)
 'Margins'
-'-------'Sets the margins.
-        If strLabelLow = "margins" Or strLabelLow = "margin" Then
+'-------'Sets the margins and page size.
+        If strLabelLow = "margins" Or strLabelLow = "margin" _
+            Or strLabelLow = "page" Or strLabelLow = "page size" _
+            Or strLabelLow = "paper size" Then
             For lngSpec = 1 To UBound(arrSpecs)
                 strSpec = arrSpecs(lngSpec)
                 strSpecLow = LCase(strSpec)
@@ -51,6 +55,19 @@ Sub sctApplySpecs()
                         .MirrorMargins = True
                     ElseIf strSpecLow = "no mirror margins" Then
                         .MirrorMargins = False
+                    ElseIf InStr(strSpecLow, "portrait") _
+                        Or InStr(strSpecLow, "vertical") Then
+                        .Orientation = wdOrientPortrait
+                    ElseIf InStr(strSpecLow, "landscape") _
+                        Or InStr(strSpecLow, "horizontal") Then
+                        .Orientation = wdOrientLandscape
+                    ElseIf InStr(strSpecLow, "width") _
+                        Or InStr(strSpecLow, "wide") Then
+                        .PageWidth = InchesToPoints(dblSpec)
+                    ElseIf InStr(strSpecLow, "height") _
+                        Or InStr(strSpecLow, "high") _
+                        Or InStr(strSpecLow, "tall") Then
+                        .PageHeight = InchesToPoints(dblSpec)
                     End If
                 End With
             Next lngSpec
@@ -97,27 +114,27 @@ Sub sctApplySpecs()
             'Applies the default specifications to all defined styles.
             For lngSpec = LBound(arrStyles) To UBound(arrStyles)
                 strStyle = arrStyles(lngSpec)
-                'Sends a style name and specs to the sctDefineStyle macro.
-                sctDefineStyle strStyle, arrSpecs
+                'Sends a style name and specs to the sctDefineOneStyle macro.
+                sctDefineOneStyle strStyle, arrSpecs
             Next lngSpec
         
         'Or if the line begins with a style name, then...
         ElseIf Right(strLabelLow, 5) = "style" Then
             'Applies the specifications on the line to the style.
             strStyle = Left(strLabel, InStr(strLabelLow, "style") - 2)
-            sctDefineStyle strStyle, arrSpecs
+            sctDefineOneStyle strStyle, arrSpecs
 'Gallery'
-'-------'Customizes the quick styles gallery.
+'-------'Customizes the style gallery on the Home menu.
         ElseIf strLabelLow = "styles gallery" _
             Or strLabelLow = "style gallery" Then
-            'Removes the defaults.
+            'Removes the defaults from the style gallery.
             arrDefaultStyleGallery = Split(sctDefaultStyleGallery, ", ")
             For lngSpec = LBound(arrDefaultStyleGallery) _
                 To UBound(arrDefaultStyleGallery)
                 strStyle = arrDefaultStyleGallery(lngSpec)
                 ActiveDocument.Styles(strStyle).QuickStyle = False
             Next lngSpec
-            'Adds styles to the Style gallery.
+            'Adds styles to the style gallery.
             For lngSpec = 1 To UBound(arrSpecs)
                 strStyle = arrSpecs(lngSpec)
                 With ActiveDocument.Styles(strStyle)
@@ -145,7 +162,37 @@ Sub sctApplySpecs()
             If lngLevels > 9 Then lngLevels = 9
             'Saves the style names in an array (_, 1).
             Erase arrList
-            ReDim arrList(1 To lngLevels, 1 To sctSpecs)
+            ReDim arrList(1 To lngLevels, 1 To 27)
+        
+'            Key to specifications in the array.
+'             2. NumberFormat
+'             3. TrailingCharacter
+'             4. NumberStyle
+'             5. NumberPosition
+'             6. Alignment
+'             7. TextPosition
+'             8. TabPosition
+'             9. ResetOnHigher
+'            10. StartAt
+'            12. Font.Bold
+'            13. Font.Italic
+'            14. Font.StrikeThrough
+'            15. Font.Subscript
+'            16. Font.Superscript
+'            17. Font.Shadow
+'            18. Font.Outline
+'            19. Font.Emboss
+'            20. Font.Engrave
+'            21. Font.AllCaps
+'            22. Font.Hidden
+'            23. Font.Underline
+'            24. Font.Color
+'            25. Font.Size
+'            26. Font.Animation
+'            27. Font.DoubleStrikeThrough
+'            11. Font.Name
+'             1. LinkedStyle
+        
             For lngLevel = 1 To lngLevels
                 arrList(lngLevel, 1) = arrSpecs(lngLevel)
             Next lngLevel
@@ -167,7 +214,7 @@ Sub sctApplySpecs()
                         '...saves the specs in the array...
                         sctDefineList arrList, lngLevel, arrSpecs
                         '...and applies any style specs.
-                        sctDefineStyle arrList(lngLevel, 1), arrSpecs
+                        sctDefineOneStyle arrList(lngLevel, 1), arrSpecs
                     Next lngLevel
                 
                 'If a line has specs for a style...
@@ -199,7 +246,7 @@ Sub sctApplySpecs()
                     For lngLevel = 1 To lngLevels
                         If arrList(lngLevel, 1) = strStyle Then
                             '...applies any style specs again.
-                            sctDefineStyle strStyle, arrSpecs
+                            sctDefineOneStyle strStyle, arrSpecs
                         End If
                     Next lngLevel
                 End If
@@ -226,8 +273,8 @@ Sub sctApplySpecs()
                         If arrList(lngLevel, 13) <> "" Then
                             .Italic = arrList(lngLevel, 13)
                         End If
-                        If arrList(lngLevel, 14) <> "" Then
-                            .Color = arrList(lngLevel, 14)
+                        If arrList(lngLevel, 24) <> "" Then
+                            .Color = arrList(lngLevel, 24)
                         End If
                     End With
                     If arrList(lngLevel, 3) <> "" Then
@@ -245,13 +292,15 @@ Sub sctApplySpecs()
                     If arrList(lngLevel, 7) <> "" Then
                         .TextPosition = arrList(lngLevel, 7)
                     End If
-'                    .TabPosition = wdUndefined
-'                    .ResetOnHigher = (lngLevel - 1)
-'                    .StartAt = 1
+'                    .TabPosition = wdUndefined      'Default
+'                    .ResetOnHigher = (lngLevel - 1) 'Default
+                    If arrList(lngLevel, 10) <> "" Then
+                        .StartAt = arrList(lngLevel, 10)
+                    End If
                     If arrList(lngLevel, 1) <> "" Then
                         .LinkedStyle = arrList(lngLevel, 1)
                     End If
-                    'The linked style name must be set after the indents.
+                    'The linked style name must be set last.
                 End With
             Next lngLevel
             Set objListTemplate = Nothing
@@ -306,14 +355,16 @@ Private Function sctStyleExists(ByVal strStyle As String, _
         Set objListTemplate = objDocument.ListTemplates(strStyle)
         sctStyleExists = Not objListTemplate Is Nothing
     End If
+    Set objStyle = Nothing: Set objListTemplate = Nothing
 End Function
 
-Private Sub sctDefineStyle(ByVal strStyle As String, arrSpecs() As String)
+Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
     
     Dim lngType As Long, lngSpec As Long, strSpec As String, dblSpec As Double
     Dim strSpecLow As String, dblSpec2 As Double
     Dim objStyle As Object, objFont As Object, objFormat As Object
     
+    'Checks whether the style is for paragraphs or characters.
     lngType = ActiveDocument.Styles(strStyle).Type
     
     'Looks at each specification in the array.
@@ -591,7 +642,16 @@ Private Sub sctDefineStyle(ByVal strStyle As String, arrSpecs() As String)
                 Or Left(strSpecLow, 30) = "do not require a page break ab" _
                 Then
                 objFormat.PageBreakBefore = False
-            ElseIf Right(strSpecLow, 6) = "border" Then '----------- borders
+            ElseIf strSpecLow = "no border" _
+                Or strSpecLow = "no borders" Then '----------------- borders
+                With objFormat
+                    .Borders(wdBorderTop).LineStyle = wdLineStyleNone
+                    .Borders(wdBorderLeft).LineStyle = wdLineStyleNone
+                    .Borders(wdBorderBottom).LineStyle = wdLineStyleNone
+                    .Borders(wdBorderRight).LineStyle = wdLineStyleNone
+                End With
+            ElseIf Right(strSpecLow, 6) = "border" _
+                Or Right(strSpecLow, 7) = "borders" Then
                 If InStr(strSpecLow, "top") <> 0 Then
                     dblSpec2 = wdBorderTop
                 ElseIf InStr(strSpecLow, "bottom") <> 0 Then
@@ -629,9 +689,12 @@ Private Sub sctDefineStyle(ByVal strStyle As String, arrSpecs() As String)
                     End With
                 End If
             ElseIf strSpecLow = "no tabs" _
+                Or strSpecLow = "no tab" _
                 Or strSpecLow = "clear tabs" _
+                Or strSpecLow = "clear tab" _
                 Or strSpecLow = "clear all tabs" _
                 Or strSpecLow = "remove tabs" _
+                Or strSpecLow = "remove tab" _
                 Or strSpecLow = "remove all tabs" Then '--------------- tabs
                 objFormat.TabStops.ClearAll
             ElseIf strSpecLow = "center tab" _
@@ -671,6 +734,7 @@ Private Sub sctDefineStyle(ByVal strStyle As String, arrSpecs() As String)
             End If
         End If
     Next lngSpec
+    Set objStyle = Nothing: Set objFont = Nothing: Set objFormat = Nothing
 End Sub
 
 Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
@@ -684,6 +748,35 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
         strSpec = arrSpecs(lngSpec)
         strSpecLow = LCase(strSpec)
         dblSpec = Val(strSpec)
+        
+'        Key to specifications in the array.
+'         2. NumberFormat
+'         3. TrailingCharacter
+'         4. NumberStyle
+'         5. NumberPosition
+'         6. Alignment
+'         7. TextPosition
+'         8. TabPosition
+'         9. ResetOnHigher
+'        10. StartAt
+'        12. Font.Bold
+'        13. Font.Italic
+'        14. Font.StrikeThrough
+'        15. Font.Subscript
+'        16. Font.Superscript
+'        17. Font.Shadow
+'        18. Font.Outline
+'        19. Font.Emboss
+'        20. Font.Engrave
+'        21. Font.AllCaps
+'        22. Font.Hidden
+'        23. Font.Underline
+'        24. Font.Color
+'        25. Font.Size
+'        26. Font.Animation
+'        27. Font.DoubleStrikeThrough
+'        11. Font.Name
+'         1. LinkedStyle
         
         'Saves whether no bullet or number is specified.
         If Right(strSpecLow, 9) = "no number" _
@@ -737,7 +830,7 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             End If
             arrList(lngLevel, 11) = strSpec
         
-        'Saves the number bold spec (spec 12).
+        'Saves the number bold spec (spec 12) and number italic spec (spec 13).
         ElseIf strSpecLow = "bold bullet" _
             Or strSpecLow = "bold bullets" _
             Or strSpecLow = "bold number" _
@@ -745,8 +838,6 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             Or strSpecLow = "bold letter" _
             Or strSpecLow = "bold letters" Then
             arrList(lngLevel, 12) = True
-        
-        'Saves the number italic spec (spec 13).
         ElseIf strSpecLow = "italic number" _
             Or strSpecLow = "italic numbers" _
             Or strSpecLow = "italic letter" _
@@ -784,27 +875,37 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
                     & Mid(strSpec, 3, 2) _
                     & Left(strSpec, 2)
                 dblSpec = Val("&H" & strSpec)
-                arrList(lngLevel, 14) = dblSpec
+                arrList(lngLevel, 24) = dblSpec
             ElseIf strSpecLow = "black" Then
                 dblSpec = wdColorBlack
-                arrList(lngLevel, 14) = dblSpec
+                arrList(lngLevel, 24) = dblSpec
             End If
         
-        'Saves the bullet or number indent (_, 5).
+        'Saves the bullet or number indent (spec 5) and text indent (spec 7).
         ElseIf Right(strSpecLow, 13) = "bullet indent" _
             Or Right(strSpecLow, 13) = "number indent" _
             Or Right(strSpecLow, 13) = "letter indent" Then
             arrList(lngLevel, 5) = InchesToPoints(dblSpec)
-        'Saves the text indent (_, 7).
         ElseIf Right(strSpecLow, 11) = "text indent" Then
             arrList(lngLevel, 7) = InchesToPoints(dblSpec)
         
-        'If bullets, saves bullets (_, 2) and style (_, 4).
+        'If bullets, saves bullets (spec 2) and style (spec 4).
         ElseIf Right(strSpecLow, 6) = "bullet" _
             And Left(strSpecLow, 8) <> "based on" _
             And Left(strSpecLow, 11) <> "followed by" Then
             arrList(lngLevel, 2) = Left(strSpec, 1)
             arrList(lngLevel, 4) = wdListNumberStyleBullet
+        
+        'Saves the starting number (spec 10).
+        ElseIf Right(strSpecLow, 8) = "start at" _
+            Or Left(strSpecLow, 11) = "starting at" _
+            Or Right(strSpecLow, 10) = "start with" _
+            Or Left(strSpecLow, 13) = "starting with" _
+            Or Right(strSpecLow, 8) = "begin at" _
+            Or Left(strSpecLow, 12) = "beginning at" _
+            Or Right(strSpecLow, 10) = "begin with" _
+            Or Left(strSpecLow, 14) = "beginning with" Then
+            arrList(lngLevel, 10) = Split(strSpec, " ")(2)
         
         'If numbers, saves the number specs.
         ElseIf (Right(strSpecLow, 6) = "number" _
@@ -812,7 +913,7 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             And Left(strSpecLow, 8) <> "based on" _
             And Left(strSpecLow, 11) <> "followed by" _
             Then
-            'Saves the number format (_, 2).
+            'Saves the number format (spec 2).
             strSpec = Split(strSpec, " ")(0)
                 'Removes quotation marks.
                 If Left(strSpec, 1) = Chr(34) Then
@@ -826,7 +927,7 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
                     strSpec = Left(strSpec, Len(strSpec) - 1)
                 End If
             arrList(lngLevel, 2) = strSpec
-            'Saves the number style (_, 4).
+            'Saves the number style (spec 4).
             dblSpec = wdListNumberStyleArabic
             If InStr(strSpecLow, "uppercase roman") <> 0 Then
                 dblSpec = wdListNumberStyleUppercaseRoman
