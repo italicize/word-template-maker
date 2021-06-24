@@ -1,3 +1,6 @@
+'Notes: For these macros, a style name cannot end with the word Style.
+'   A style can be named Crazy, for example, but cannot be named Crazy Style.
+
 Const sctDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Heading 2, Heading 3, Heading 4, Heading 5, Heading 6, Heading 7, " _
     & "Heading 8, Heading 9, Title, Subtitle, Subtle Emphasis, Emphasis, " _
@@ -5,7 +8,7 @@ Const sctDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Intense Reference, Book Title, List Paragraph, Caption, TOC Heading"
     'Those built-in styles appear in the default style gallery in Word 2016.
 
-Sub sctReadAndApplyTheStyleDescriptions() 'Best as of 5/28/21
+Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
     
     Dim rngParas As Range, arrParas() As String
     Dim strPara As String, lngPara As Long, lngListPara As Long
@@ -73,9 +76,11 @@ Sub sctReadAndApplyTheStyleDescriptions() 'Best as of 5/28/21
             Next lngSpec
 'Styles '
 '-------'Saves the style names in an array.
-        ElseIf Right(strLabelLow, 5) = "style" _
-            And Right(strLabelLow, 11) <> " list style" Then
-            strStyle = Left(strLabel, InStr(strLabelLow, " style") - 1)
+        ElseIf Right(strLabelLow, 6) = " style" _
+            And Right(strLabelLow, 11) <> " list style" _
+            And Right(strSpecLow, 11) <> " base style" _
+            And Right(strSpecLow, 14) <> " default style" Then
+            strStyle = Left(strLabel, Len(strLabel) - 6)
             lngStyles = lngStyles + 1
             If lngStyles = 1 Then
                 ReDim arrStyles(1 To 1)
@@ -86,7 +91,8 @@ Sub sctReadAndApplyTheStyleDescriptions() 'Best as of 5/28/21
             
             'Adds a style if it doesn't exist.
             If Not sctStyleExists(strStyle, ActiveDocument) Then
-                If InStr(strPara, ", character style") <> 0 Then
+                If InStr(strPara, ", character style") <> 0 _
+                    Or InStr(strPara, ", new character style") <> 0 Then
                     dblSpec = wdStyleTypeCharacter
                 Else
                     dblSpec = wdStyleTypeParagraph
@@ -119,9 +125,11 @@ Sub sctReadAndApplyTheStyleDescriptions() 'Best as of 5/28/21
             Next lngSpec
         
         'Or if the line begins with a style name, then...
-        ElseIf Right(strLabelLow, 5) = "style" Then
+        ElseIf Right(strLabelLow, 6) = " style" _
+            And Right(strLabelLow, 11) <> " list style" _
+            And Right(strSpecLow, 11) <> " base style" Then
             'Applies the specifications on the line to the style.
-            strStyle = Left(strLabel, InStr(strLabelLow, "style") - 2)
+            strStyle = Left(strLabel, Len(strLabel) - 6)
             sctDefineOneStyle strStyle, arrSpecs
 'Gallery'
 '-------'Customizes the style gallery on the Home menu.
@@ -262,6 +270,7 @@ Sub sctReadAndApplyTheStyleDescriptions() 'Best as of 5/28/21
             'Applies the list template specifications.
             For lngLevel = 1 To lngLevels
                 With objListTemplate.ListLevels(lngLevel)
+                    .NumberFormat = ""
                     .NumberFormat = arrList(lngLevel, 2)
                     With .Font
                         If arrList(lngLevel, 11) <> "" Then
@@ -375,110 +384,283 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
         
         Set objStyle = ActiveDocument.Styles(strStyle)
         Set objFont = objStyle.Font
-        Set objFormat = objStyle.ParagraphFormat
+        If lngType = wdStyleTypeParagraph Then
+            Set objFormat = objStyle.ParagraphFormat
+        End If
         
-        If Left(strSpecLow, 8) = "based on" Then '----------- based on style
-            strSpec = Right(strSpec, Len(strSpec) - 9)
-            strSpecLow = LCase(strSpec)
-            If strSpecLow = "no style" Then
-                objStyle.BaseStyle = ""
-            ElseIf strStyle <> "Normal" _
-                And strStyle <> "Default Paragraph Font" Then
-                objStyle.BaseStyle = strSpec
+'-------'Applies specifications to both character and paragraph styles.
+        If lngType = wdStyleTypeCharacter Or lngType = wdStyleTypeParagraph Then
+            '(skipped) objStyle.AutomaticallyUpdate = False
+            If Left(strSpecLow, 9) = "based on " _
+                Or Right(strSpecLow, 11) = " base style" Then '-- based on style
+                If Left(strSpecLow, 9) = "based on " Then
+                    strSpec = Right(strSpec, Len(strSpec) - 9)
+                    If Right(strSpecLow, 6) = " style" _
+                        And Right(strSpecLow, 9) <> " no style" Then
+                        strSpec = Left(strSpec, Len(strSpec) - 6)
+                    End If
+                ElseIf Right(strSpecLow, 11) = " base style" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 11)
+                End If
+                strSpecLow = LCase(strSpec)
+                If strSpecLow = "no style" _
+                    Or strSpecLow = "underlying properties" Then
+                    objStyle.BaseStyle = ""
+                ElseIf strStyle <> "Normal" _
+                    And strStyle <> "Default Paragraph Font" Then
+                    objStyle.BaseStyle = strSpec
+                End If
+            ElseIf Left(strSpecLow, 12) = "followed by " _
+                Or Right(strSpecLow, 21) = " next paragraph style" _
+                Or Right(strSpecLow, 11) = " next style" Then '- following style
+                If Left(strSpecLow, 12) = "followed by " Then
+                    strSpec = Right(strSpec, Len(strSpec) - 12)
+                ElseIf Right(strSpecLow, 21) = " next paragraph style" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 21)
+                ElseIf Right(strSpecLow, 11) = " next style" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 11)
+                End If
+                strSpecLow = LCase(strSpec)
+                If Right(strSpecLow, 6) = " style" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 6)
+                End If
+                objStyle.NextParagraphStyle = strSpec
+            ElseIf Left(strSpecLow, 13) = "space between" _
+                Or Left(strSpecLow, 17) = "add space between" _
+                Then '-------------------------------------------- space between
+                objStyle.NoSpaceBetweenParagraphsOfSameStyle = False
+            ElseIf Left(strSpecLow, 16) = "no space between" _
+                Or Left(strSpecLow, 23) = "don't add space between" _
+                Or Left(strSpecLow, 23) = "don’t add space between" _
+                Or Left(strSpecLow, 24) = "do not add space between" Then
+                objStyle.NoSpaceBetweenParagraphsOfSameStyle = True
+            
+            ElseIf Right(strSpecLow, 5) = " font" _
+                And Right(strSpecLow, 12) <> " bullet font" _
+                And Right(strSpecLow, 12) <> " number font" _
+                And Right(strSpecLow, 12) <> " letter font" _
+                And Right(strSpecLow, 13) <> " numeral font" _
+                And Right(strSpecLow, 13) <> " bullets font" _
+                And Right(strSpecLow, 13) <> " numbers font" _
+                And Right(strSpecLow, 13) <> " letters font" Then '--- font name
+                If Right(strSpecLow, 13) = " bullets font" _
+                    Or Right(strSpecLow, 13) = " numbers font" _
+                    Or Right(strSpecLow, 13) = " letters font" _
+                    Or Right(strSpecLow, 13) = " numeral font" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 13)
+                ElseIf Right(strSpecLow, 12) = " bullet font" _
+                    Or Right(strSpecLow, 12) = " number font" _
+                    Or Right(strSpecLow, 12) = " letter font" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 12)
+                ElseIf Right(strSpecLow, 5) = " font" Then
+                    strSpec = Left(strSpec, Len(strSpec) - 5)
+                End If
+                strSpecLow = LCase(strSpec)
+                If strSpecLow = "body" Then
+                    strSpec = "+Body"
+                ElseIf strSpecLow = "headings" _
+                    Or strSpecLow = "heading" Then
+                    strSpec = "+Headings"
+                End If
+                If strSpecLow <> "default" Then
+                    objFont.Name = strSpec
+                End If
+            ElseIf Right(strSpecLow, 4) = "size" Then '-------------------- size
+                objFont.Size = Val(strSpec)
+            ElseIf strSpecLow = "bold" Then '------------------------------ bold
+                objFont.Bold = True
+            ElseIf strSpecLow = "not bold" _
+                Or strSpecLow = "no bold" Then
+                objFont.Bold = False
+            ElseIf strSpecLow = "italic" Then '-------------------------- italic
+                objFont.Italic = True
+            ElseIf strSpecLow = "not italic" _
+                Or strSpecLow = "no italic" Then
+                objFont.Italic = False
+            ElseIf strSpecLow = "bold and italic" _
+                Or strSpecLow = "italic and bold" Then
+                objFont.Bold = True
+                objFont.Italic = True
+            ElseIf strSpecLow = "no bold or italic" _
+                Or strSpecLow = "no bold and italic" _
+                Or strSpecLow = "no italic or bold" _
+                Or strSpecLow = "no italic and bold" _
+                Or strSpecLow = "not bold or italic" _
+                Or strSpecLow = "not bold and italic" _
+                Or strSpecLow = "not italic or bold" _
+                Or strSpecLow = "not italic and bold" Then
+                objFont.Bold = False
+                objFont.Italic = False
+            ElseIf InStr(strSpecLow, "underline") <> 0 Then '--------- underline
+                If strSpecLow = "no underline" _
+                    Or strSpecLow = "not underlined" _
+                    Or strSpecLow = "underline none" Then
+                    objFont.Underline = wdUnderlineNone
+                ElseIf strSpecLow = "underline dash" _
+                    Or strSpecLow = "dash underline" Then
+                    objFont.Underline = wdUnderlineDash
+                ElseIf strSpecLow = "underline dash heavy" _
+                    Or strSpecLow = "heavy dash underline" Then
+                    objFont.Underline = wdUnderlineDashHeavy
+                ElseIf strSpecLow = "underline dash long" _
+                    Or strSpecLow = "long dash underline" Then
+                    objFont.Underline = wdUnderlineDashLong
+                ElseIf strSpecLow = "underline dash long heavy" _
+                    Or strSpecLow = "heavy long dash underline" _
+                    Or strSpecLow = "long heavy dash underline" Then
+                    objFont.Underline = wdUnderlineDashLongHeavy
+                ElseIf strSpecLow = "underline dot dash" _
+                    Or strSpecLow = "dot dash underline" _
+                    Or strSpecLow = "dot-dash underline" Then
+                    objFont.Underline = wdUnderlineDotDash
+                ElseIf strSpecLow = "underline dot dash heavy" _
+                    Or strSpecLow = "heavy dot dash underline" _
+                    Or strSpecLow = "heavy dot-dash underline" Then
+                    objFont.Underline = wdUnderlineDotDashHeavy
+                ElseIf strSpecLow = "underline dot dot dash" _
+                    Or strSpecLow = "dot dot dash underline" _
+                    Or strSpecLow = "dot-dot-dash underline" Then
+                    objFont.Underline = wdUnderlineDotDotDash
+                ElseIf strSpecLow = "underline dot dot dash heavy" _
+                    Or strSpecLow = "heavy dot dot dash underline" _
+                    Or strSpecLow = "heavy dot-dot-dash underline" Then
+                    objFont.Underline = wdUnderlineDotDotDashHeavy
+                ElseIf strSpecLow = "underline dotted" _
+                    Or strSpecLow = "dotted underline" _
+                    Or strSpecLow = "dot underline" Then
+                    objFont.Underline = wdUnderlineDotted
+                ElseIf strSpecLow = "underline dotted heavy" _
+                    Or strSpecLow = "heavy dotted underline" _
+                    Or strSpecLow = "dotted heavy underline" _
+                    Or strSpecLow = "heavy dot underline" Then
+                    objFont.Underline = wdUnderlineDottedHeavy
+                ElseIf strSpecLow = "underline double" _
+                    Or strSpecLow = "double underline" _
+                    Or strSpecLow = "double underlined" Then
+                    objFont.Underline = wdUnderlineDouble
+                ElseIf strSpecLow = "underline single" _
+                    Or strSpecLow = "single underline" _
+                    Or strSpecLow = "single underlined" Then
+                    objFont.Underline = wdUnderlineSingle
+                ElseIf strSpecLow = "underline thick" _
+                    Or strSpecLow = "thick underline" _
+                    Or strSpecLow = "thick underlined" Then
+                    objFont.Underline = wdUnderlineThick
+                ElseIf strSpecLow = "underline wavy" _
+                    Or strSpecLow = "wavy underline" Then
+                    objFont.Underline = wdUnderlineWavy
+                ElseIf strSpecLow = "underline wavy double" _
+                    Or strSpecLow = "double wavy underline" _
+                    Or strSpecLow = "wavy double underline" Then
+                    objFont.Underline = wdUnderlineWavyDouble
+                ElseIf strSpecLow = "underline wavy heavy" _
+                    Or strSpecLow = "heavy wavy underline" _
+                    Or strSpecLow = "wavy heavy underline" Then
+                    objFont.Underline = wdUnderlineWavyHeavy
+                ElseIf strSpecLow = "underline words" _
+                    Or strSpecLow = "underline words only" _
+                    Or strSpecLow = "word underline" _
+                    Or strSpecLow = "words underlined" Then
+                    objFont.Underline = wdUnderlineWords
+                End If
+            '(skipped) objFont.SmallCaps = False '------------------- small caps
+            ElseIf strSpecLow = "uppercase" _
+                Or strSpecLow = "uppercase letters" _
+                Or strSpecLow = "all uppercase" _
+                Or strSpecLow = "all uppercase letters" _
+                Or strSpecLow = "caps" _
+                Or strSpecLow = "all caps" _
+                Or strSpecLow = "capitals" _
+                Or strSpecLow = "all capitals" _
+                Or strSpecLow = "capital letters" _
+                Or strSpecLow = "all capital letters" _
+                Or strSpecLow = "capitalize" _
+                Or strSpecLow = "capitalized" _
+                Or strSpecLow = "capitalized letters" _
+                Or strSpecLow = "all capitalized" _
+                Or strSpecLow = "all capital letters" _
+                Then '------------------------------------------------- all caps
+                objFont.AllCaps = True
+            ElseIf strSpecLow = "not uppercase" _
+                Or strSpecLow = "not uppercase letters" _
+                Or strSpecLow = "not all uppercase" _
+                Or strSpecLow = "not all uppercase letters" _
+                Or strSpecLow = "not caps" _
+                Or strSpecLow = "not all caps" _
+                Or strSpecLow = "not capitals" _
+                Or strSpecLow = "not all capitals" _
+                Or strSpecLow = "not capital letters" _
+                Or strSpecLow = "not all capital letters" _
+                Or strSpecLow = "not capitalize" _
+                Or strSpecLow = "not capitalized" _
+                Or strSpecLow = "not capitalized letters" _
+                Or strSpecLow = "not all capitalized" _
+                Or strSpecLow = "not all capital letters" _
+                Or strSpecLow = "no all caps" Then
+                objFont.AllCaps = False
+            ElseIf Right(strSpecLow, 5) = "color" _
+                And Right(strSpecLow, 12) <> "bullet color" _
+                And Right(strSpecLow, 12) <> "number color" _
+                And Right(strSpecLow, 12) <> "letter color" _
+                And Right(strSpecLow, 13) <> "numeral color" Then '------- color
+                strSpec = Split(strSpec, " ")(0)
+                strSpecLow = LCase(strSpec)
+                If Left(strSpec, 1) = "#" Then
+                    strSpec = Right(strSpec, Len(strSpec) - 1)
+                    strSpec = Right(strSpec, 2) & Mid(strSpec, 3, 2) _
+                        & Left(strSpec, 2)
+                    dblSpec = Val("&H" & strSpec)
+                    objFont.Color = dblSpec
+                ElseIf strSpecLow = "automatic" Or strSpecLow = "auto" _
+                    Or strSpecLow = "no" Then
+                    dblSpec = wdColorAutomatic
+                    objFont.Color = dblSpec
+                ElseIf strSpecLow = "black" Then
+                    dblSpec = wdColorBlack
+                    objFont.Color = dblSpec
+                ElseIf strSpecLow = "white" Then
+                    dblSpec = wdColorWhite
+                    objFont.Color = dblSpec
+                End If
+            ElseIf strSpecLow = "normal letterspacing" _
+                Or strSpecLow = "normal letter spacing" _
+                Or strSpecLow = "normal letter-spacing" _
+                Or strSpecLow = "normal character spacing" _
+                Or strSpecLow = "normal character-spacing" _
+                Or strSpecLow = "no letterspacing" _
+                Or strSpecLow = "no letter spacing" _
+                Or strSpecLow = "no letter-spacing" _
+                Or strSpecLow = "no character spacing" _
+                Or strSpecLow = "no character-spacing" _
+                Or strSpecLow = "not letterspaced" _
+                Or strSpecLow = "not letter spaced" _
+                Or strSpecLow = "not letter-spaced" _
+                Or strSpecLow = "not character spaced" _
+                Or strSpecLow = "not character-spaced" Then '----- letterspacing
+                objFont.Spacing = 0
+            ElseIf Right(strSpecLow, 13) = "letterspacing" _
+                Or Right(strSpecLow, 14) = "letter spacing" _
+                Or Right(strSpecLow, 14) = "letter-spacing" _
+                Or Right(strSpecLow, 17) = "character spacing" _
+                Or Right(strSpecLow, 17) = "character-spacing" Then
+                objFont.Spacing = dblSpec
+            ElseIf strSpecLow = "kerning" Then '------------------------ kerning
+                objFont.Kerning = 8
+            ElseIf strSpecLow = "no kerning" Or strSpecLow = "not kerned" Then
+                objFont.Kerning = 0
             End If
-        ElseIf Left(strSpecLow, 11) = "followed by" Then '-- following style
-            strSpec = Right(strSpec, Len(strSpec) - 12)
-            strSpecLow = LCase(strSpec)
-            If Right(strSpecLow, 6) = " style" Then
-                strSpec = Left(strSpec, Len(strSpec) - 6)
-            End If
-            objStyle.NextParagraphStyle = strSpec
-        ElseIf Left(strSpecLow, 13) = "space between" _
-            Or Left(strSpecLow, 17) = "add space between" _
-            Then '-------------------------------------------- space between
-            objStyle.NoSpaceBetweenParagraphsOfSameStyle = False
-        ElseIf Left(strSpecLow, 16) = "no space between" _
-            Or Left(strSpecLow, 23) = "don't add space between" _
-            Or Left(strSpecLow, 23) = "don’t add space between" _
-            Or Left(strSpecLow, 24) = "do not add space between" Then
-            objStyle.NoSpaceBetweenParagraphsOfSameStyle = True
+        End If
         
-        ElseIf Right(strSpecLow, 4) = "font" _
-            And Right(strSpecLow, 11) <> "bullet font" _
-            And Right(strSpecLow, 11) <> "number font" _
-            And Right(strSpecLow, 11) <> "letter font" Then '---------- font
-            strSpec = Left(strSpec, Len(strSpec) - 5)
-            strSpecLow = LCase(strSpec)
-            If strSpecLow = "body" Then
-                strSpec = "+Body"
-            ElseIf strSpecLow = "headings" _
-                Or strSpecLow = "heading" Then
-                strSpec = "+Headings"
-            ElseIf strSpecLow = "default" Then
-                strSpec = ""
-            End If
-            objFont.Name = strSpec
-        ElseIf Right(strSpecLow, 4) = "size" Then '-------------------- size
-            objFont.Size = Val(strSpec)
-        ElseIf strSpecLow = "bold" Then '------------------------------ bold
-            objFont.Bold = True
-        ElseIf strSpecLow = "not bold" Or strSpecLow = "no bold" Then
-            objFont.Bold = False
-        ElseIf strSpecLow = "italic" Then '-------------------------- italic
-            objFont.Italic = True
-        ElseIf strSpecLow = "not italic" Or strSpecLow = "no italic" Then
-            objFont.Italic = False
-        ElseIf strSpecLow = "bold and italic" _
-            Or strSpecLow = "italic and bold" Then
-            objFont.Bold = True
-            objFont.Italic = True
-        ElseIf strSpecLow = "small caps" Then '------------------ small caps
-            objFont.SmallCaps = True
-        ElseIf strSpecLow = "uppercase" Or strSpecLow = "all caps" _
-            Then '----------------------------------------------------- caps
-            objFont.AllCaps = True
-        ElseIf Right(strSpecLow, 5) = "color" _
-            And Right(strSpecLow, 12) <> "bullet color" _
-            And Right(strSpecLow, 12) <> "number color" _
-            And Right(strSpecLow, 12) <> "letter color" Then '-------- color
-            strSpec = Split(strSpec, " ")(0)
-            strSpecLow = LCase(strSpec)
-            If Left(strSpec, 1) = "#" Then
-                strSpec = Right(strSpec, Len(strSpec) - 1)
-                strSpec = Right(strSpec, 2) & Mid(strSpec, 3, 2) _
-                    & Left(strSpec, 2)
-                dblSpec = Val("&H" & strSpec)
-                objFont.Color = dblSpec
-            ElseIf strSpecLow = "automatic" Or strSpecLow = "auto" _
-                Or strSpecLow = "no" Then
-                dblSpec = wdColorAutomatic
-                objFont.Color = dblSpec
-            ElseIf strSpecLow = "black" Then
-                dblSpec = wdColorBlack
-                objFont.Color = dblSpec
-            End If
-        ElseIf strSpecLow = "normal character spacing" Then ' letter spacing
-            objFont.Spacing = 0
-        ElseIf Right(strSpecLow, 17) = "character spacing" Then
-            objFont.Spacing = dblSpec
-        ElseIf strSpecLow = "kerning" Then '------------------------ kerning
-            objFont.Kerning = 8
-        ElseIf strSpecLow = "no kerning" Then
-            objFont.Kerning = 0
-        
-        ElseIf lngType = wdStyleTypeParagraph Then
+'-------'Applies specifications to paragraph styles.
+        If lngType = wdStyleTypeParagraph Then
             If Right(strSpecLow, 11) = "left indent" Then '--------- indents
                 objFormat.LeftIndent = InchesToPoints(dblSpec)
             ElseIf Right(strSpecLow, 12) = "right indent" Then
                 objFormat.RightIndent = InchesToPoints(dblSpec)
-            ElseIf (Right(strSpecLow, 6) = "before" _
-                And strSpecLow <> "page break before" _
-                And strSpecLow <> "no page break before") _
-                Or Right(strSpecLow, 5) = "above" Then '------- space before
-                objFormat.SpaceBefore = dblSpec
-            ElseIf Right(strSpecLow, 5) = "after" _
-                Or Right(strSpecLow, 5) = "below" Then '-------- space after
-                objFormat.SpaceAfter = dblSpec
+            '(moved down) objFormat.SpaceBefore = dblSpec
+            '(skipped) objFormat.SpaceBeforeAuto = False
+            '(moved down) objFormat.SpaceAfter = dblSpec
+            '(skipped) objFormat.SpaceAfterAuto = False
             ElseIf Right(strSpecLow, 12) = "line spacing" Then 'line spacing
                 If Split(strSpecLow, " ")(1) = "pt" _
                     Or Split(strSpecLow, " ")(1) = "pt." _
@@ -586,6 +768,9 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 Or Left(strSpecLow, 24) = "allow a page break below" _
                 Then
                 objFormat.KeepWithNext = False
+            ElseIf Right(strSpecLow, 5) = "after" _
+                Or Right(strSpecLow, 5) = "below" Then '-------- space after
+                objFormat.SpaceAfter = dblSpec
             ElseIf Left(strSpecLow, 13) = "keep together" _
                 Or Left(strSpecLow, 19) = "keep lines together" _
                 Or Left(strSpecLow, 29) = "keep paragraph lines together" _
@@ -642,6 +827,27 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 Or Left(strSpecLow, 30) = "do not require a page break ab" _
                 Then
                 objFormat.PageBreakBefore = False
+            ElseIf Right(strSpecLow, 6) = "before" _
+                Or Right(strSpecLow, 5) = "above" Then '------- space before
+                objFormat.SpaceBefore = dblSpec
+            '(skipped) objFormat.NoLineNumber = False
+            '(skipped) objFormat.Hyphenation = True
+            '(skipped) objFormat.FirstLineIndent = InchesToPoints(0)
+            ElseIf Left(strSpecLow, 14) = "outline level " Then '----- level
+                dblSpec = Val(Right(strSpec, 1))
+                If dblSpec >= 1 And dblSpec <= 9 Then
+                    objFormat.OutlineLevel = dblSpec
+                Else
+                    objFormat.OutlineLevel = wdOutlineLevelBodyText
+                End If
+            '(skipped) objFormat.CharacterUnitLeftIndent = 0
+            '(skipped) objFormat.CharacterUnitRightIndent = 0
+            '(skipped) objFormat.CharacterUnitFirstLineIndent = 0
+            '(skipped) objFormat.LineUnitBefore = 0
+            '(skipped) objFormat.LineUnitAfter = 0
+            '(skipped) objFormat.MirrorIndents = False
+            '(skipped) objFormat.TextboxTightWrap = wdTightNone
+            '(skipped) objFormat.CollapsedByDefault = False
             ElseIf strSpecLow = "no border" _
                 Or strSpecLow = "no borders" Then '----------------- borders
                 With objFormat
@@ -727,7 +933,7 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                     dblSpec2 = 99
                 End If
                 If dblSpec2 <> 99 Then
-                    objFormat.TabStops.Add Position:=(dblSpec), _
+                    objFormat.TabStops.Add Position:=InchesToPoints(dblSpec), _
                         Alignment:=dblSpec2, _
                         Leader:=wdTabLeaderSpaces
                 End If
@@ -782,9 +988,11 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
         If Right(strSpecLow, 9) = "no number" _
             Or Right(strSpecLow, 9) = "no bullet" _
             Or Right(strSpecLow, 9) = "no letter" _
+            Or Right(strSpecLow, 10) = "no numeral" _
             Or Right(strSpecLow, 10) = "no numbers" _
             Or Right(strSpecLow, 10) = "no bullets" _
-            Or Right(strSpecLow, 10) = "no letters" Then
+            Or Right(strSpecLow, 10) = "no letters" _
+            Or Right(strSpecLow, 11) = "no numerals" Then
             arrList(lngLevel, 2) = ""
             arrList(lngLevel, 4) = wdListNumberStyleNone
         
@@ -792,11 +1000,27 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
         ElseIf Right(strSpecLow, 12) = "after bullet" _
             Or Right(strSpecLow, 14) = "follows bullet" _
             Or Right(strSpecLow, 16) = "following bullet" _
+            Or Right(strSpecLow, 13) = "after bullets" _
+            Or Right(strSpecLow, 15) = "follows bullets" _
+            Or Right(strSpecLow, 17) = "following bullets" _
             Or Right(strSpecLow, 12) = "after number" _
             Or Right(strSpecLow, 14) = "follows number" _
-            Or Right(strSpecLow, 16) = "following letter" _
+            Or Right(strSpecLow, 16) = "following number" _
+            Or Right(strSpecLow, 13) = "after numbers" _
+            Or Right(strSpecLow, 15) = "follows numbers" _
+            Or Right(strSpecLow, 17) = "following numbers" _
+            Or Right(strSpecLow, 12) = "after letter" _
             Or Right(strSpecLow, 14) = "follows letter" _
-            Or Right(strSpecLow, 16) = "following letter" Then
+            Or Right(strSpecLow, 16) = "following letter" _
+            Or Right(strSpecLow, 13) = "after letters" _
+            Or Right(strSpecLow, 15) = "follows letters" _
+            Or Right(strSpecLow, 17) = "following letters" _
+            Or Right(strSpecLow, 13) = "after numeral" _
+            Or Right(strSpecLow, 15) = "follows numeral" _
+            Or Right(strSpecLow, 17) = "following numeral" _
+            Or Right(strSpecLow, 14) = "after numerals" _
+            Or Right(strSpecLow, 16) = "follows numerals" _
+            Or Right(strSpecLow, 18) = "following numerals" Then
             If Split(strSpecLow, " ")(0) = "one" _
                 Or Split(strSpecLow, " ")(0) = "a" _
                 Or Split(strSpecLow, " ")(0) = "only" Then
@@ -815,10 +1039,11 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             arrList(lngLevel, 3) = dblSpec
         
         'Saves the font for the bullet or number (spec 11).
-        ElseIf Right(strSpecLow, 11) = "bullet font" _
-            Or Right(strSpecLow, 11) = "number font" _
-            Or Right(strSpecLow, 11) = "letter font" Then
-            strSpec = Left(strSpec, Len(strSpec) - 12)
+        ElseIf Right(strSpecLow, 12) = " bullet font" _
+            Or Right(strSpecLow, 12) = " number font" _
+            Or Right(strSpecLow, 12) = " letter font" _
+            Or Right(strSpecLow, 13) = " numeral font" Then
+            strSpec = Trim(Left(strSpec, Len(strSpec) - 12))
             strSpecLow = LCase(strSpec)
             If strSpecLow = "body" Then
                 strSpec = "+Body"
@@ -836,12 +1061,18 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             Or strSpecLow = "bold number" _
             Or strSpecLow = "bold numbers" _
             Or strSpecLow = "bold letter" _
-            Or strSpecLow = "bold letters" Then
+            Or strSpecLow = "bold letters" _
+            Or strSpecLow = "bold numeral" _
+            Or strSpecLow = "bold numerals" Then
             arrList(lngLevel, 12) = True
-        ElseIf strSpecLow = "italic number" _
+        ElseIf strSpecLow = "italic bullet" _
+            Or strSpecLow = "italic bullets" _
+            Or strSpecLow = "italic number" _
             Or strSpecLow = "italic numbers" _
             Or strSpecLow = "italic letter" _
-            Or strSpecLow = "italic letters" Then
+            Or strSpecLow = "italic letters" _
+            Or strSpecLow = "italic numeral" _
+            Or strSpecLow = "italic numerals" Then
             arrList(lngLevel, 13) = True
         ElseIf strSpecLow = "bold italic number" _
             Or strSpecLow = "bold italic numbers" _
@@ -858,14 +1089,23 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             Or strSpecLow = "bold and italic letter" _
             Or strSpecLow = "bold and italic letters" _
             Or strSpecLow = "italic and bold letter" _
-            Or strSpecLow = "italic and bold letters" Then
+            Or strSpecLow = "italic and bold letters" _
+            Or strSpecLow = "bold italic numeral" _
+            Or strSpecLow = "bold italic numerals" _
+            Or strSpecLow = "italic bold numeral" _
+            Or strSpecLow = "italic bold numerals" _
+            Or strSpecLow = "bold and italic numeral" _
+            Or strSpecLow = "bold and italic numerals" _
+            Or strSpecLow = "italic and bold numeral" _
+            Or strSpecLow = "italic and bold numerals" Then
             arrList(lngLevel, 12) = True
             arrList(lngLevel, 13) = True
         
         'Saves the bullet or number color (spec 14).
         ElseIf Right(strSpecLow, 12) = "bullet color" _
             Or Right(strSpecLow, 12) = "number color" _
-            Or Right(strSpecLow, 12) = "letter color" Then
+            Or Right(strSpecLow, 12) = "letter color" _
+            Or Right(strSpecLow, 13) = "numeral color" Then
             strSpec = Split(strSpec, " ")(0)
             strSpecLow = LCase(strSpec)
             If Left(strSpec, 1) = "#" Then
@@ -884,13 +1124,15 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
         'Saves the bullet or number indent (spec 5) and text indent (spec 7).
         ElseIf Right(strSpecLow, 13) = "bullet indent" _
             Or Right(strSpecLow, 13) = "number indent" _
-            Or Right(strSpecLow, 13) = "letter indent" Then
+            Or Right(strSpecLow, 13) = "letter indent" _
+            Or Right(strSpecLow, 14) = "numeral indent" Then
             arrList(lngLevel, 5) = InchesToPoints(dblSpec)
         ElseIf Right(strSpecLow, 11) = "text indent" Then
             arrList(lngLevel, 7) = InchesToPoints(dblSpec)
         
         'If bullets, saves bullets (spec 2) and style (spec 4).
-        ElseIf Right(strSpecLow, 6) = "bullet" _
+        ElseIf (Right(strSpecLow, 6) = "bullet" _
+            Or Right(strSpecLow, 7) = "bullets") _
             And Left(strSpecLow, 8) <> "based on" _
             And Left(strSpecLow, 11) <> "followed by" Then
             arrList(lngLevel, 2) = Left(strSpec, 1)
@@ -909,10 +1151,13 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
         
         'If numbers, saves the number specs.
         ElseIf (Right(strSpecLow, 6) = "number" _
-            Or Right(strSpecLow, 6) = "letter") _
+            Or Right(strSpecLow, 6) = "letter" _
+            Or Right(strSpecLow, 7) = "numeral" _
+            Or Right(strSpecLow, 7) = "numbers" _
+            Or Right(strSpecLow, 7) = "letters" _
+            Or Right(strSpecLow, 8) = "numerals") _
             And Left(strSpecLow, 8) <> "based on" _
-            And Left(strSpecLow, 11) <> "followed by" _
-            Then
+            And Left(strSpecLow, 11) <> "followed by" Then
             'Saves the number format (spec 2).
             strSpec = Split(strSpec, " ")(0)
                 'Removes quotation marks.
@@ -929,14 +1174,16 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             arrList(lngLevel, 2) = strSpec
             'Saves the number style (spec 4).
             dblSpec = wdListNumberStyleArabic
-            If InStr(strSpecLow, "uppercase roman") <> 0 Then
-                dblSpec = wdListNumberStyleUppercaseRoman
-            ElseIf InStr(strSpecLow, "lowercase roman") <> 0 Then
+            If InStr(strSpecLow, "roman") <> 0 _
+                Or InStr(strSpecLow, "numeral") <> 0 Then
                 dblSpec = wdListNumberStyleLowercaseRoman
+            ElseIf InStr(strSpecLow, "uppercase roman") <> 0 _
+                Or InStr(strSpecLow, "uppercase numeral") <> 0 Then
+                dblSpec = wdListNumberStyleUppercaseRoman
+            ElseIf InStr(strSpecLow, "letter") <> 0 Then
+                dblSpec = wdListNumberStyleLowercaseLetter
             ElseIf InStr(strSpecLow, "uppercase letter") <> 0 Then
                 dblSpec = wdListNumberStyleUppercaseLetter
-            ElseIf InStr(strSpecLow, "lowercase letter") <> 0 Then
-                dblSpec = wdListNumberStyleLowercaseLetter
             ElseIf InStr(strSpecLow, "legal") <> 0 Then
                 dblSpec = wdListNumberStyleLegal
             End If
@@ -951,7 +1198,7 @@ Private Sub sctInsertSampleText(arrStyles() As String)
     For lngStyle = LBound(arrStyles) To UBound(arrStyles)
         With Selection
             .InsertAfter arrStyles(lngStyle) & " sample" & vbCrLf
-            .Paragraphs(1).Style = arrStyles(lngStyle)
+            .Style = arrStyles(lngStyle)
             .Collapse wdCollapseEnd
         End With
      Next lngStyle
