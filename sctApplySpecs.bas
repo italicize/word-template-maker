@@ -1,5 +1,5 @@
-'Notes: For these macros, a style name cannot end with the word Style.
-'   A style can be named Crazy, for example, but cannot be named Crazy Style.
+'Notes: For these macros, a style name cannot end with words List or Style.
+'   A style can be named Arch, for example, but cannot be named Arch Style.
 
 Const sctDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Heading 2, Heading 3, Heading 4, Heading 5, Heading 6, Heading 7, " _
@@ -8,7 +8,7 @@ Const sctDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Intense Reference, Book Title, List Paragraph, Caption, TOC Heading"
     'Those built-in styles appear in the default style gallery in Word 2016.
 
-Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
+Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
     
     Dim rngParas As Range, arrParas() As String
     Dim strPara As String, lngPara As Long, lngListPara As Long
@@ -16,7 +16,7 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
     Dim arrSpecs() As String, strSpec As String
     Dim strSpecLow As String, lngSpec As Long, dblSpec As Double
     Dim arrStyles() As String, lngStyles As Long, strStyle As String
-    Dim arrDefaultStyleGallery() As String
+    Dim arrDefaultStyleGallery() As String, lngType As Long
     Dim arrList() As Variant, strList As String, lngList As Long
     Dim lngLevel As Long, lngLevels As Long
     Dim objListTemplate As ListTemplate
@@ -117,11 +117,14 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
             Or strLabelLow = "defaults for defined styles" _
             Or strLabelLow = "default for all defined styles" _
             Or strLabelLow = "default for defined styles" Then
-            'Applies the default specifications to all defined styles.
+            'Applies the default specifications to all defined paragraph styles.
             For lngSpec = LBound(arrStyles) To UBound(arrStyles)
                 strStyle = arrStyles(lngSpec)
-                'Sends a style name and specs to the sctDefineOneStyle macro.
-                sctDefineOneStyle strStyle, arrSpecs
+                lngType = ActiveDocument.Styles(strStyle).Type
+                If lngType = wdStyleTypeParagraph Then
+                    'Sends style name and specs to the sctDefineOneStyle macro.
+                    sctDefineOneStyle strStyle, arrSpecs
+                End If
             Next lngSpec
         
         'Or if the line begins with a style name, then...
@@ -168,10 +171,14 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
             'Counts the styles in the list.
             lngLevels = UBound(arrSpecs)
             If lngLevels > 9 Then lngLevels = 9
+            
             'Saves the style names in an array (_, 1).
             Erase arrList
             ReDim arrList(1 To lngLevels, 1 To 27)
-        
+            For lngLevel = 1 To lngLevels
+                arrList(lngLevel, 1) = arrSpecs(lngLevel)
+            Next lngLevel
+            
 '            Key to specifications in the array.
 '             2. NumberFormat
 '             3. TrailingCharacter
@@ -200,10 +207,6 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
 '            27. Font.DoubleStrikeThrough
 '            11. Font.Name
 '             1. LinkedStyle
-        
-            For lngLevel = 1 To lngLevels
-                arrList(lngLevel, 1) = arrSpecs(lngLevel)
-            Next lngLevel
             
             'Reads each line in the document, looking for specs for the list.
             For lngListPara = LBound(arrParas) To UBound(arrParas)
@@ -315,6 +318,8 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/23/21
             Set objListTemplate = Nothing
         End If
     Next lngPara
+'Samples'
+'-------'Offers to insert a sample of each defined style.
     strSpec = "Styles defined." & vbCrLf & vbCrLf & "Insert sample text?"
     dblSpec = MsgBox(strSpec, vbYesNo, "Macro complete")
     If dblSpec = vbYes Then
@@ -391,7 +396,10 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
 '-------'Applies specifications to both character and paragraph styles.
         If lngType = wdStyleTypeCharacter Or lngType = wdStyleTypeParagraph Then
             '(skipped) objStyle.AutomaticallyUpdate = False
-            If Left(strSpecLow, 9) = "based on " _
+            If Left(strSpec, 1) = "[" _
+                Or Right(strSpec, 1) = "]" Then
+                'Ignores specifications in square brackets.
+            ElseIf Left(strSpecLow, 9) = "based on " _
                 Or Right(strSpecLow, 11) = " base style" Then '-- based on style
                 If Left(strSpecLow, 9) = "based on " Then
                     strSpec = Right(strSpec, Len(strSpec) - 9)
@@ -406,8 +414,7 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 If strSpecLow = "no style" _
                     Or strSpecLow = "underlying properties" Then
                     objStyle.BaseStyle = ""
-                ElseIf strStyle <> "Normal" _
-                    And strStyle <> "Default Paragraph Font" Then
+                Else
                     objStyle.BaseStyle = strSpec
                 End If
             ElseIf Left(strSpecLow, 12) = "followed by " _
@@ -424,7 +431,13 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 If Right(strSpecLow, 6) = " style" Then
                     strSpec = Left(strSpec, Len(strSpec) - 6)
                 End If
-                objStyle.NextParagraphStyle = strSpec
+                strSpecLow = LCase(strSpec)
+                If strSpecLow = "the same" _
+                    Or strSpecLow = "same" Then
+                    objStyle.NextParagraphStyle = strStyle
+                Else
+                    objStyle.NextParagraphStyle = strSpec
+                End If
             ElseIf Left(strSpecLow, 13) = "space between" _
                 Or Left(strSpecLow, 17) = "add space between" _
                 Then '-------------------------------------------- space between
@@ -921,22 +934,17 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                     Alignment:=wdAlignTabRight, _
                     Leader:=wdTabLeaderSpaces
             ElseIf Right(strSpecLow, 3) = "tab" Then
-                If InStr(strSpecLow, "left") <> 0 Then
-                    dblSpec2 = wdAlignTabLeft
-                ElseIf InStr(strSpecLow, "center") <> 0 Then
+                dblSpec2 = wdAlignTabLeft
+                If InStr(strSpecLow, "center") <> 0 Then
                     dblSpec2 = wdAlignTabCenter
                 ElseIf InStr(strSpecLow, "right") <> 0 Then
                     dblSpec2 = wdAlignTabRight
                 ElseIf InStr(strSpecLow, "decimal") <> 0 Then
                     dblSpec2 = wdAlignTabDecimal
-                Else
-                    dblSpec2 = 99
                 End If
-                If dblSpec2 <> 99 Then
-                    objFormat.TabStops.Add Position:=InchesToPoints(dblSpec), _
-                        Alignment:=dblSpec2, _
-                        Leader:=wdTabLeaderSpaces
-                End If
+                objFormat.TabStops.Add Position:=InchesToPoints(dblSpec), _
+                    Alignment:=dblSpec2, _
+                    Leader:=wdTabLeaderSpaces
             End If
         End If
     Next lngSpec
@@ -1178,11 +1186,14 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
                 Or InStr(strSpecLow, "numeral") <> 0 Then
                 dblSpec = wdListNumberStyleLowercaseRoman
             ElseIf InStr(strSpecLow, "uppercase roman") <> 0 _
-                Or InStr(strSpecLow, "uppercase numeral") <> 0 Then
+                Or InStr(strSpecLow, "uppercase numeral") <> 0 _
+                Or InStr(strSpecLow, "upper-case roman") <> 0 _
+                Or InStr(strSpecLow, "upper-case numeral") <> 0 Then
                 dblSpec = wdListNumberStyleUppercaseRoman
             ElseIf InStr(strSpecLow, "letter") <> 0 Then
                 dblSpec = wdListNumberStyleLowercaseLetter
-            ElseIf InStr(strSpecLow, "uppercase letter") <> 0 Then
+            ElseIf InStr(strSpecLow, "uppercase letter") <> 0 _
+                Or InStr(strSpecLow, "upper-case letter") <> 0 Then
                 dblSpec = wdListNumberStyleUppercaseLetter
             ElseIf InStr(strSpecLow, "legal") <> 0 Then
                 dblSpec = wdListNumberStyleLegal
