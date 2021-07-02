@@ -1,16 +1,16 @@
 'Notes: For these macros, a style name cannot end with words List or Style.
 '   A style can be named Arch, for example, but cannot be named Arch Style.
 
-Const sctDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
+Const strDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Heading 2, Heading 3, Heading 4, Heading 5, Heading 6, Heading 7, " _
     & "Heading 8, Heading 9, Title, Subtitle, Subtle Emphasis, Emphasis, " _
     & "Intense Emphasis, Strong, Quote, Intense Quote, Subtle Reference, " _
     & "Intense Reference, Book Title, List Paragraph, Caption, TOC Heading"
     'Those built-in styles appear in the default style gallery in Word 2016.
 
-Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
+Sub vbaApplyStyleDescriptions()
     
-    Dim rngParas As Range, arrParas() As String
+    Dim strDesc As String, strTag As String, arrParas() As String
     Dim strPara As String, lngPara As Long, lngListPara As Long
     Dim strLabel As String, strLabelLow As String
     Dim arrSpecs() As String, strSpec As String
@@ -20,11 +20,21 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
     Dim arrList() As Variant, strList As String, lngList As Long
     Dim lngLevel As Long, lngLevels As Long
     Dim objListTemplate As ListTemplate
+    Dim objForm As frmApplyStyles
     
-    'Saves every line in the document in an array.
-    Set rngParas = ActiveDocument.StoryRanges(wdMainTextStory)
-    arrParas = sctSaveParagraphsInAnArray(rngParas)
-    'Reads each line in the document by reading the array.
+    'Asks for style descriptions.
+    Set objForm = New frmApplyStyles
+    With objForm
+        .Show
+        strDesc = .txtDesc.Value
+        strTag = .Tag
+    End With
+    Unload objForm
+    Set objForm = Nothing
+    If strTag = "0" Or strDesc = "" Then GoTo lbl_Exit
+    'Saves every line in an array.
+    arrParas = vbaSaveParagraphsInAnArray(strDesc)
+    'Reads each line of style descriptions.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = arrParas(lngPara)
         'Saves the specifications on each line (between commas) in an array.
@@ -90,7 +100,7 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
             arrStyles(lngStyles) = strStyle
             
             'Adds a style if it doesn't exist.
-            If Not sctStyleExists(strStyle, ActiveDocument) Then
+            If Not vbaStyleExists(strStyle, ActiveDocument) Then
                 If InStr(strPara, ", character style") <> 0 _
                     Or InStr(strPara, ", new character style") <> 0 Then
                     dblSpec = wdStyleTypeCharacter
@@ -102,7 +112,7 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
         End If
     Next lngPara
     
-    'Reads each line in the document (again).
+    'Reads each line of style descriptions again.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = arrParas(lngPara)
         'Saves the specifications on each line (between commas) in an array.
@@ -122,8 +132,8 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
                 strStyle = arrStyles(lngSpec)
                 lngType = ActiveDocument.Styles(strStyle).Type
                 If lngType = wdStyleTypeParagraph Then
-                    'Sends style name and specs to the sctDefineOneStyle macro.
-                    sctDefineOneStyle strStyle, arrSpecs
+                    'Sends style name and specs to the vbaDefineOneStyle macro.
+                    vbaDefineOneStyle strStyle, arrSpecs
                 End If
             Next lngSpec
         
@@ -133,13 +143,13 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
             And Right(strSpecLow, 11) <> " base style" Then
             'Applies the specifications on the line to the style.
             strStyle = Left(strLabel, Len(strLabel) - 6)
-            sctDefineOneStyle strStyle, arrSpecs
+            vbaDefineOneStyle strStyle, arrSpecs
 'Gallery'
 '-------'Customizes the style gallery on the Home menu.
         ElseIf strLabelLow = "styles gallery" _
             Or strLabelLow = "style gallery" Then
             'Removes the defaults from the style gallery.
-            arrDefaultStyleGallery = Split(sctDefaultStyleGallery, ", ")
+            arrDefaultStyleGallery = Split(strDefaultStyleGallery, ", ")
             For lngSpec = LBound(arrDefaultStyleGallery) _
                 To UBound(arrDefaultStyleGallery)
                 strStyle = arrDefaultStyleGallery(lngSpec)
@@ -223,9 +233,9 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
                     Or Right(strLabelLow, 8) = " default") Then
                     For lngLevel = 1 To lngLevels
                         '...saves the specs in the array...
-                        sctDefineList arrList, lngLevel, arrSpecs
+                        vbaDefineList arrList, lngLevel, arrSpecs
                         '...and applies any style specs.
-                        sctDefineOneStyle arrList(lngLevel, 1), arrSpecs
+                        vbaDefineOneStyle arrList(lngLevel, 1), arrSpecs
                     Next lngLevel
                 
                 'If a line has specs for a style...
@@ -235,7 +245,7 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
                     For lngLevel = 1 To lngLevels
                         If arrList(lngLevel, 1) = strStyle Then
                             '...saves the specs in the array.
-                            sctDefineList arrList, lngLevel, arrSpecs
+                            vbaDefineList arrList, lngLevel, arrSpecs
                         End If
                     Next lngLevel
                 End If
@@ -257,14 +267,14 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
                     For lngLevel = 1 To lngLevels
                         If arrList(lngLevel, 1) = strStyle Then
                             '...applies any style specs again.
-                            sctDefineOneStyle strStyle, arrSpecs
+                            vbaDefineOneStyle strStyle, arrSpecs
                         End If
                     Next lngLevel
                 End If
             Next lngListPara
             
             'Adds a list template if it doesn't exist.
-            If sctStyleExists(strList, ActiveDocument) Then
+            If vbaStyleExists(strList, ActiveDocument) Then
                 Set objListTemplate = ActiveDocument.ListTemplates(strList)
             Else
                 Set objListTemplate = _
@@ -316,28 +326,28 @@ Sub sctApplyTheStyleDescriptions() 'Best as of 6/29/21
                 End With
             Next lngLevel
             Set objListTemplate = Nothing
+'Samples'
+'-------'Inserts a sample of each defined style.
+        ElseIf Left(strLabelLow, 13) = "insert sample" Then
+            ActiveDocument.Characters.Last.Select
+            With Selection
+                .Collapse wdCollapseEnd
+                .TypeParagraph
+                .ClearFormatting
+                vbaInsertSampleText arrStyles
+                .EndKey Unit:=wdStory
+            End With
         End If
     Next lngPara
-'Samples'
-'-------'Offers to insert a sample of each defined style.
-    strSpec = "Styles defined." & vbCrLf & vbCrLf & "Insert sample text?"
-    dblSpec = MsgBox(strSpec, vbYesNo, "Macro complete")
-    If dblSpec = vbYes Then
-        rngParas.Select
-        With Selection
-            .Collapse wdCollapseEnd
-            .TypeParagraph
-            .ClearFormatting
-            sctInsertSampleText arrStyles
-            .EndKey Unit:=wdStory
-        End With
-    End If
+lbl_Exit:
+    Exit Sub
 End Sub
 
-Private Function sctSaveParagraphsInAnArray(ByVal rngRange As Range) As String()
+Function vbaSaveParagraphsInAnArray(ByVal varDesc As Variant) _
+    As String()
     Dim arrParas() As String, lngPara As Long, strPara As String
     'Saves paragraphs in an array.
-    arrParas = Split(rngRange, vbCr)
+    arrParas = Split(varDesc, vbCrLf)
     'Cleans up the text in the paragraphs.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = CStr(arrParas(lngPara))
@@ -356,23 +366,23 @@ Private Function sctSaveParagraphsInAnArray(ByVal rngRange As Range) As String()
         If strPara = "" Then strPara = "[empty line]"
         arrParas(lngPara) = strPara
     Next lngPara
-    sctSaveParagraphsInAnArray = arrParas
+    vbaSaveParagraphsInAnArray = arrParas
 End Function
 
-Private Function sctStyleExists(ByVal strStyle As String, _
+Private Function vbaStyleExists(ByVal strStyle As String, _
     ByVal objDocument As Document) As Boolean
     Dim objStyle As Style, objListTemplate As ListTemplate
     On Error Resume Next
     Set objStyle = objDocument.Styles(strStyle)
-    sctStyleExists = Not objStyle Is Nothing
-    If Not sctStyleExists Then
+    vbaStyleExists = Not objStyle Is Nothing
+    If Not vbaStyleExists Then
         Set objListTemplate = objDocument.ListTemplates(strStyle)
-        sctStyleExists = Not objListTemplate Is Nothing
+        vbaStyleExists = Not objListTemplate Is Nothing
     End If
     Set objStyle = Nothing: Set objListTemplate = Nothing
 End Function
 
-Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
+Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
     
     Dim lngType As Long, lngSpec As Long, strSpec As String, dblSpec As Double
     Dim strSpecLow As String, dblSpec2 As Double
@@ -951,7 +961,7 @@ Private Sub sctDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
     Set objStyle = Nothing: Set objFont = Nothing: Set objFormat = Nothing
 End Sub
 
-Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
+Private Sub vbaDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
     arrSpecs() As String)
     
     Dim lngSpec As Long, strSpec As String, strSpecLow As String
@@ -1204,7 +1214,7 @@ Private Sub sctDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
     Next lngSpec
 End Sub
 
-Private Sub sctInsertSampleText(arrStyles() As String)
+Private Sub vbaInsertSampleText(arrStyles() As String)
     Dim lngStyle As Long
     For lngStyle = LBound(arrStyles) To UBound(arrStyles)
         With Selection
