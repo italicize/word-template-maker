@@ -17,7 +17,7 @@
 1. Click the label.
 1. For its Name, type **Label**.
 1. Click the text box.
-1. For itsName, type **TextBox**.
+1. For itsName, type **txtInput**.
 1. For EnterKeyBehavior, select **True**.
 1. For MultiLine, select **True**.
 1. Click the lower-left command button.
@@ -31,4 +31,8 @@
 1. Type `Me.Tag = 0: Me. Hide` in the blank line below Private Sub cmdCancel_Click().
 1. From the drop-down menu above the code, select **cmdContinue**.
 1. Type `Me.Tag = 1: Me. Hide` in the blank line below Private Sub cmdContinue_Click().
+1. Close the toolbox.
 1. Click the **File** menu and click **Save Normal**.
+
+
+
