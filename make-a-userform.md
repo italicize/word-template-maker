@@ -28,7 +28,7 @@
 1. For Name, type **cmdContinue**.
 1. For its Caption, type **Continue**.
 1. Right-click the lower-left button and select **View Code**.
-1. Type **Me.Tag = 0: Me. Hide** in the blank line below Private Sub cmdCancel_Click().
+1. Type `Me.Tag = 0: Me. Hide` in the blank line below Private Sub cmdCancel_Click().
 1. From the drop-down menu above the code, select **cmdContinue**.
-1. Type **Me.Tag = 1: Me. Hide** in the blank line below Private Sub cmdContinue_Click().
+1. Type `Me.Tag = 1: Me. Hide` in the blank line below Private Sub cmdContinue_Click().
 1. Click the **File** menu and click **Save Normal**.
