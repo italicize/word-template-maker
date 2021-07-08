@@ -1,6 +1,6 @@
 # Make a LongInputBox function
 
-Sometimes you need a LongInputBox function that accepts 32,000 characters, including line break, because the [InputBox function](https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/inputbox-function) accepts only 254 characters.
+Sometimes you need a LongInputBox function that accepts 32,000 characters, including line breaks, because the [InputBox function](https://docs.microsoft.com/en-us/office/vba/language/reference/user-interface-help/inputbox-function) accepts only 254 characters.
 
 1. Make a new UserForm:
    1. Open Word and open a new blank document.
@@ -56,23 +56,17 @@ End Sub
 ```vb
 Public Function LongInputBox(ByVal strPrompt As String, _
     ByVal strTitle As String) As String
-    Dim strInput As String, strTag As String
     Dim objForm As frmLongInputBox
     Set objForm = New frmLongInputBox
     With objForm
         .lblPrompt.Caption = strPrompt
         .Caption = strTitle
         .Show
-        strInput = .txtInput.Value
-        strTag = .Tag
+        LongInputBox = .txtInput.Value
+        If .Tag = "0" Then LongInputBox = ""
     End With
     Unload objForm
     Set objForm = Nothing
-    If strTag = "0" Or strInput = "" Then
-        LongInputBox = ""
-    Else
-        LongInputBox = strInput
-    End If
 End Function
 ```
 
