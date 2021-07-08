@@ -33,7 +33,7 @@ Sometimes you need a LongInputBox function that accepts 32,000 characters, inclu
    1. Click the lower-right command button. \
       For Name, type **cmdContinue**. \
       For its Caption, type **Continue**.
-1. Add the code: \
+1. Add code to the UserForm: \
    In the project pane, right-click **frmLongInputBox** and select **View Code**. \
    Type or paste this code:
 
