@@ -59,10 +59,12 @@ Public Function LongInputBox(ByVal strPrompt As String, _
     Dim objForm As frmLongInputBox
     Set objForm = New frmLongInputBox
     With objForm
+        'Changes the prompt and title on the form.
         .lblPrompt.Caption = strPrompt
         .Caption = strTitle
         .Show
         LongInputBox = .txtInput.Value
+        'If Cancel is clicked, returns no string.
         If .Tag = "0" Then LongInputBox = ""
     End With
     Unload objForm
