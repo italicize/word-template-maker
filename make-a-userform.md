@@ -56,6 +56,7 @@ End Sub
 ```vb
 Public Function LongInputBox(ByVal strPrompt As String, _
     ByVal strTitle As String) As String
+    On Error GoTo The_End:
     Dim objForm As frmLongInputBox
     Set objForm = New frmLongInputBox
     With objForm
@@ -69,10 +70,23 @@ Public Function LongInputBox(ByVal strPrompt As String, _
     End With
     Unload objForm
     Set objForm = Nothing
+The_End:
 End Function
 ```
 
 Click the **File** menu and click **Save Normal**.
 
+# Save shortcuts to a macro
 
+1. For add a button, right-click the quick access toolbar and select **Customize Quick Access Toolbar**.
+   1. For "Choose commands from" select **Macros**.
+   1. Click a macro and click **Add**.
+   1. Click **Modify**, click an image, and click **OK**.
+1. To add a keyboard shortcut, right-click the menu ribbon and select **Customize the Ribbon**.
+   1. Next to "Keyboard shortcuts" click **Customize**.
+   1. For "Categories" select **Macros**.
+   1. Click a macro.
+   1. Click the box for "Press new shortcut key."
+   1. Type a shortcut, such as **Alt+.**.
+   1. Click **Assign**, click **Close**, and click **OK**.
 
