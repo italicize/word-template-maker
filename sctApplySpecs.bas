@@ -1,4 +1,7 @@
-'Notes: For these macros, a style name cannot end with words List or Style.
+Option Explicit
+'---5---10---15---20---25---30---35---40---45---50---55---60---65---70---75---80
+
+'Notes: For these macros, a style name cannot end with the words List or Style.
 '   A style can be named Arch, for example, but cannot be named Arch Style.
 
 Const strDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
@@ -8,9 +11,101 @@ Const strDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Intense Reference, Book Title, List Paragraph, Caption, TOC Heading"
     'Those built-in styles appear in the default style gallery in Word 2016.
 
-Sub vbaApplyStyleDescriptions()
-    
-    Dim strDesc As String, strTag As String, arrParas() As String
+Sub TestOfCommandParser()
+    Call vbaAskForStyleDescriptions
+
+'    Dim strDesc As String, strDescLow As String
+'    strDesc = _
+'        LongInputBox("Describe the style changes or other instructions.", _
+'        "Input, please")
+'    If strDesc = "" Then Exit Sub
+'
+'    strDesc = RemoveExtraSpaces(strDesc)
+'    strDesc = CutLeftOrRight(strDesc, ".", wdRight)
+'    strDesc = CutLeftOrRight(strDesc, "call ", wdLeft)
+'    strDesc = CutLeftOrRight(strDesc, "run macro ", wdLeft)
+'    strDesc = CutLeftOrRight(strDesc, "run ", wdLeft)
+'
+'    If "GenericTestMacro" = strDesc Then
+'        GenericTestMacro
+'    ElseIf "GenericTestMacro" = strDesc Then
+'        vbaApplyStyleDescriptions strDesc 'Why doesn't this work?
+'    End If
+End Sub
+
+'Function RemoveExtraSpaces(ByVal strString As String) As String
+'    Dim lngA As Long
+'    strString = Trim(strString)
+'    For lngA = 1 To 3
+'        strString = _
+'            Replace(Replace(Replace(Replace(Replace(strString, _
+'            "      ", " "), "     ", " "), "    ", " "), "   ", " "), "  ", " ")
+'    Next lngA
+'    RemoveExtraSpaces = strString
+'End Function
+'
+'Function ReplaceWhiteSpaceWithSpaces(ByVal strString As String) As String
+'    strString = Replace(strString, vbTab, " ")
+''Add other kinds of white space, like nonbreaking spaces.
+'    ReplaceWhiteSpaceWithSpaces = strString
+'End Function
+'
+'Function TrimWS(ByVal str As String) As String
+''Source: https://stackoverflow.com/questions/25184019/trim-all-types-of-whitespace-including-tabs
+'    str = Trim(str)
+'    Do Until Not Left(str, 1) = Chr(9)
+'        str = Trim(Mid(str, 2, Len(str) - 1))
+'        str = Trim(str)
+'    Loop
+'    Do Until Not Right(str, 1) = Chr(9)
+'        str = Trim(Left(str, Len(str) - 1))
+'        str = Trim(str)
+'    Loop
+'    TrimWS = str
+'End Function
+'
+'Function CutLeftOrRight(ByVal strString As String, ByVal strExtra As String, _
+'    ByVal lngPlace As Long) As String
+'    Dim strLowercaseString As String, strLowercaseExtra As String
+'    strLowercaseString = LCase(strString)
+'    strLowercaseExtra = LCase(strExtra)
+'    If lngPlace = wdLeft Then
+'        If Left(strLowercaseString, Len(strExtra)) = strLowercaseExtra Then
+'            CutLeftOrRight = Right(strString, Len(strString) - Len(strExtra))
+'        Else
+'            CutLeftOrRight = strString
+'        End If
+'    ElseIf lngPlace = wdRight Then
+'        If Right(strLowercaseString, Len(strExtra)) = strLowercaseExtra Then
+'            CutLeftOrRight = Left(strString, Len(strString) - Len(strExtra))
+'        Else
+'            CutLeftOrRight = strString
+'        End If
+'    Else
+'        CutLeftOrRight = strString
+'    End If
+'End Function
+
+Public Sub vbaAskForStyleDescriptions()
+    Dim strDesc As String
+    'Asks for style descriptions.
+    strDesc = _
+        LongInputBox("Describe the style changes or other instructions.", _
+        "Settings to change")
+    If strDesc = "" Then Exit Sub
+    vbaApplyStyleDescriptions strDesc
+End Sub
+
+Public Sub vbaApplyStyleDescriptions(ByVal strDesc As String) '...as of 05/28/22
+'Maybe add shading. See TrialOfShading.
+'Maybe add Remove from Style Gallery.
+'Maybe add Assign Value. Maybe reassign values to styles removed from gallery.
+'Maybe add right 1" tab. Now it's only 1" right tab.
+'Make it work with tab-delimited specifications.
+'Investigate why 6 pt after didn't work as a default.
+'Investigate why a List Number heading didn't have an indent of 0.5" for number.
+'Explain that "10 pt font" needs to say "10 pt size" or "10 pt font size"
+    Dim arrParas() As String ', strDesc As String
     Dim strPara As String, lngPara As Long, lngListPara As Long
     Dim strLabel As String, strLabelLow As String
     Dim arrSpecs() As String, strSpec As String
@@ -20,21 +115,11 @@ Sub vbaApplyStyleDescriptions()
     Dim arrList() As Variant, strList As String, lngList As Long
     Dim lngLevel As Long, lngLevels As Long
     Dim objListTemplate As ListTemplate
-    Dim objForm As frmApplyStyles
+    Dim objActiveDocument As Document: Set objActiveDocument = ActiveDocument
     
-    'Asks for style descriptions.
-    Set objForm = New frmApplyStyles
-    With objForm
-        .Show
-        strDesc = .txtDesc.Value
-        strTag = .Tag
-    End With
-    Unload objForm
-    Set objForm = Nothing
-    If strTag = "0" Or strDesc = "" Then GoTo lbl_Exit
     'Saves every line in an array.
     arrParas = vbaSaveParagraphsInAnArray(strDesc)
-    'Reads each line of style descriptions.
+    'Reads each line of the style descriptions.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = arrParas(lngPara)
         'Saves the specifications on each line (between commas) in an array.
@@ -51,7 +136,7 @@ Sub vbaApplyStyleDescriptions()
                 strSpec = arrSpecs(lngSpec)
                 strSpecLow = LCase(strSpec)
                 dblSpec = Val(strSpec)
-                With ActiveDocument.PageSetup
+                With objActiveDocument.PageSetup
                     If InStr(strSpecLow, "left") <> 0 Then
                         .LeftMargin = InchesToPoints(dblSpec)
                     ElseIf InStr(strSpecLow, "right") <> 0 Then
@@ -81,6 +166,83 @@ Sub vbaApplyStyleDescriptions()
                         Or InStr(strSpecLow, "high") _
                         Or InStr(strSpecLow, "tall") Then
                         .PageHeight = InchesToPoints(dblSpec)
+                    ElseIf InStr(strSpecLow, "letter") Then
+                        .PageWidth = InchesToPoints(8.5)
+                        .PageHeight = InchesToPoints(11)
+                    ElseIf InStr(strSpecLow, "tabloid") _
+                        Or InStr(strSpecLow, "ledger") Then
+                        .PageWidth = InchesToPoints(11)
+                        .PageHeight = InchesToPoints(17)
+                    ElseIf InStr(strSpecLow, "legal") Then
+                        .PageWidth = InchesToPoints(8.5)
+                        .PageHeight = InchesToPoints(14)
+                    ElseIf InStr(strSpecLow, "executive") Then
+                        .PageWidth = InchesToPoints(7.25)
+                        .PageHeight = InchesToPoints(10.5)
+                    ElseIf InStr(strSpecLow, "a3") Then
+                        .PageWidth = InchesToPoints(11.69)
+                        .PageHeight = InchesToPoints(16.54)
+                    ElseIf InStr(strSpecLow, "a4") Then
+                        .PageWidth = InchesToPoints(8.27)
+                        .PageHeight = InchesToPoints(11.69)
+                    ElseIf InStr(strSpecLow, "a5") Then
+                        .PageWidth = InchesToPoints(5.83)
+                        .PageHeight = InchesToPoints(8.27)
+                    ElseIf InStr(strSpecLow, "a6") Then
+                        .PageWidth = InchesToPoints(4.13)
+                        .PageHeight = InchesToPoints(5.83)
+                    ElseIf InStr(strSpecLow, "screen") Then
+                        .PageWidth = InchesToPoints(6.5)
+                        .PageHeight = InchesToPoints(5.18)
+                    ElseIf InStr(strSpecLow, "ansi c") Then
+                        .PageWidth = InchesToPoints(17)
+                        .PageHeight = InchesToPoints(22)
+                    ElseIf InStr(strSpecLow, "arch a") Then
+                        .PageWidth = InchesToPoints(9)
+                        .PageHeight = InchesToPoints(12)
+                    ElseIf InStr(strSpecLow, "arch b") Then
+                        .PageWidth = InchesToPoints(12)
+                        .PageHeight = InchesToPoints(18)
+                    ElseIf InStr(strSpecLow, "iso b5") Then
+                        .PageWidth = InchesToPoints(6.93)
+                        .PageHeight = InchesToPoints(9.85)
+                    ElseIf InStr(strSpecLow, "iso b4") Then
+                        .PageWidth = InchesToPoints(9.85)
+                        .PageHeight = InchesToPoints(13.9)
+                    ElseIf InStr(strSpecLow, "c5") Then
+                        .PageWidth = InchesToPoints(6.37)
+                        .PageHeight = InchesToPoints(9.01)
+                    ElseIf InStr(strSpecLow, "jis b4") Then
+                        .PageWidth = InchesToPoints(10.12)
+                        .PageHeight = InchesToPoints(14.33)
+                    ElseIf InStr(strSpecLow, "jis b3") Then
+                        .PageWidth = InchesToPoints(14.33)
+                        .PageHeight = InchesToPoints(20.28)
+                    ElseIf InStr(strSpecLow, "slide") Then
+                        .PageWidth = InchesToPoints(7.5)
+                        .PageHeight = InchesToPoints(10)
+                    ElseIf InStr(strSpecLow, "pocket") _
+                        Or InStr(strSpecLow, "mass market") _
+                        Or InStr(strSpecLow, "mass-market") Then
+                        .PageWidth = InchesToPoints(4.25)
+                        .PageHeight = InchesToPoints(6.87)
+                    ElseIf InStr(strSpecLow, "digest") Then
+                        .PageWidth = InchesToPoints(5.5)
+                        .PageHeight = InchesToPoints(8.5)
+                    ElseIf InStr(strSpecLow, "trade") Then
+                        .PageWidth = InchesToPoints(6)
+                        .PageHeight = InchesToPoints(9)
+                    ElseIf InStr(strSpecLow, "different first page") _
+                        Or InStr(strSpecLow, "different 1st page") Then
+                        .DifferentFirstPageHeaderFooter = True
+                    ElseIf InStr(strSpecLow, "different odd & even page") _
+                        Or InStr(strSpecLow, "different odd and even page") _
+                        Or InStr(strSpecLow, "different even & odd page") _
+                        Or InStr(strSpecLow, "different even and odd page") _
+                        Or InStr(strSpecLow, "different left and right page") _
+                        Or InStr(strSpecLow, "different right and left page") _
+                        Then
+                        .OddAndEvenPagesHeaderFooter = True
                     End If
                 End With
             Next lngSpec
@@ -100,19 +262,19 @@ Sub vbaApplyStyleDescriptions()
             arrStyles(lngStyles) = strStyle
             
             'Adds a style if it doesn't exist.
-            If Not vbaStyleExists(strStyle, ActiveDocument) Then
+            If Not vbaStyleExists(strStyle, objActiveDocument) Then
                 If InStr(strPara, ", character style") <> 0 _
                     Or InStr(strPara, ", new character style") <> 0 Then
                     dblSpec = wdStyleTypeCharacter
                 Else
                     dblSpec = wdStyleTypeParagraph
                 End If
-                ActiveDocument.Styles.Add strStyle, dblSpec
+                objActiveDocument.Styles.Add strStyle, dblSpec
             End If
         End If
     Next lngPara
     
-    'Reads each line of style descriptions again.
+    'Reads each line of the styles descriptions again.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = arrParas(lngPara)
         'Saves the specifications on each line (between commas) in an array.
@@ -121,7 +283,7 @@ Sub vbaApplyStyleDescriptions()
         strLabel = arrSpecs(0)
         strLabelLow = LCase(strLabel)
         
-        'If the line begins "Style defaults," then...
+        'If any line begins "Style defaults," then...
         If strLabelLow = "style defaults" Or strLabelLow = "style default" _
             Or strLabelLow = "defaults for all defined styles" _
             Or strLabelLow = "defaults for defined styles" _
@@ -130,15 +292,26 @@ Sub vbaApplyStyleDescriptions()
             'Applies the default specifications to all defined paragraph styles.
             For lngSpec = LBound(arrStyles) To UBound(arrStyles)
                 strStyle = arrStyles(lngSpec)
-                lngType = ActiveDocument.Styles(strStyle).Type
+                lngType = objActiveDocument.Styles(strStyle).Type
                 If lngType = wdStyleTypeParagraph Then
                     'Sends style name and specs to the vbaDefineOneStyle macro.
                     vbaDefineOneStyle strStyle, arrSpecs
                 End If
             Next lngSpec
+        End If
+    Next lngPara
+    
+    'Reads each line of the style descriptions again.
+    For lngPara = LBound(arrParas) To UBound(arrParas)
+        strPara = arrParas(lngPara)
+        'Saves the specifications on each line (between commas) in an array.
+        arrSpecs = Split(strPara, ", ")
+        'Saves the first specification on each line, such as "Body Text style."
+        strLabel = arrSpecs(0)
+        strLabelLow = LCase(strLabel)
         
-        'Or if the line begins with a style name, then...
-        ElseIf Right(strLabelLow, 6) = " style" _
+        'If the line begins with a style name, then...
+        If Right(strLabelLow, 6) = " style" _
             And Right(strLabelLow, 11) <> " list style" _
             And Right(strSpecLow, 11) <> " base style" Then
             'Applies the specifications on the line to the style.
@@ -153,12 +326,12 @@ Sub vbaApplyStyleDescriptions()
             For lngSpec = LBound(arrDefaultStyleGallery) _
                 To UBound(arrDefaultStyleGallery)
                 strStyle = arrDefaultStyleGallery(lngSpec)
-                ActiveDocument.Styles(strStyle).QuickStyle = False
+                objActiveDocument.Styles(strStyle).QuickStyle = False
             Next lngSpec
             'Adds styles to the style gallery.
             For lngSpec = 1 To UBound(arrSpecs)
                 strStyle = arrSpecs(lngSpec)
-                With ActiveDocument.Styles(strStyle)
+                With objActiveDocument.Styles(strStyle)
                     .QuickStyle = True ' True means include in the gallery.
                     .UnhideWhenUsed = False ' False means never hidden.
                     .Visibility = False ' False (sic) means always visible.
@@ -274,11 +447,11 @@ Sub vbaApplyStyleDescriptions()
             Next lngListPara
             
             'Adds a list template if it doesn't exist.
-            If vbaStyleExists(strList, ActiveDocument) Then
-                Set objListTemplate = ActiveDocument.ListTemplates(strList)
+            If vbaStyleExists(strList, objActiveDocument) Then
+                Set objListTemplate = objActiveDocument.ListTemplates(strList)
             Else
                 Set objListTemplate = _
-                    ActiveDocument.ListTemplates.Add(True, CStr(strList))
+                    objActiveDocument.ListTemplates.Add(True, CStr(strList))
             End If
             'Applies the list template specifications.
             For lngLevel = 1 To lngLevels
@@ -325,11 +498,10 @@ Sub vbaApplyStyleDescriptions()
                     'The linked style name must be set last.
                 End With
             Next lngLevel
-            Set objListTemplate = Nothing
 'Samples'
 '-------'Inserts a sample of each defined style.
         ElseIf Left(strLabelLow, 13) = "insert sample" Then
-            ActiveDocument.Characters.Last.Select
+            objActiveDocument.Characters.Last.Select
             With Selection
                 .Collapse wdCollapseEnd
                 .TypeParagraph
@@ -339,8 +511,8 @@ Sub vbaApplyStyleDescriptions()
             End With
         End If
     Next lngPara
-lbl_Exit:
-    Exit Sub
+    Set objListTemplate = Nothing
+    Set objActiveDocument = Nothing
 End Sub
 
 Function vbaSaveParagraphsInAnArray(ByVal varDesc As Variant) _
@@ -373,9 +545,12 @@ Private Function vbaStyleExists(ByVal strStyle As String, _
     ByVal objDocument As Document) As Boolean
     Dim objStyle As Style, objListTemplate As ListTemplate
     On Error Resume Next
+    'Checks whether a style exists with the name.
     Set objStyle = objDocument.Styles(strStyle)
     vbaStyleExists = Not objStyle Is Nothing
+    'If not...
     If Not vbaStyleExists Then
+        'then checks whether a list exists with the name.
         Set objListTemplate = objDocument.ListTemplates(strStyle)
         vbaStyleExists = Not objListTemplate Is Nothing
     End If
@@ -386,23 +561,23 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
     
     Dim lngType As Long, lngSpec As Long, strSpec As String, dblSpec As Double
     Dim strSpecLow As String, dblSpec2 As Double
-    Dim objStyle As Object, objFont As Object, objFormat As Object
+'    Dim objStyle As Object, objFont As Object, objFormat As Object
+    Dim objStyle As Style, objFont As Font, objFormat As ParagraphFormat
+    Dim objActiveDocument As Document: Set objActiveDocument = ActiveDocument
     
-    'Checks whether the style is for paragraphs or characters.
-    lngType = ActiveDocument.Styles(strStyle).Type
+    Set objStyle = objActiveDocument.Styles(strStyle)
+    Set objFont = objStyle.Font
+    lngType = objStyle.Type
+    If lngType = wdStyleTypeParagraph Then
+        Set objFormat = objStyle.ParagraphFormat
+    End If
     
     'Looks at each specification in the array.
     For lngSpec = 1 To UBound(arrSpecs)
         strSpec = arrSpecs(lngSpec)
         strSpecLow = LCase(strSpec)
         dblSpec = Val(strSpec)
-        
-        Set objStyle = ActiveDocument.Styles(strStyle)
-        Set objFont = objStyle.Font
-        If lngType = wdStyleTypeParagraph Then
-            Set objFormat = objStyle.ParagraphFormat
-        End If
-        
+    
 '-------'Applies specifications to both character and paragraph styles.
         If lngType = wdStyleTypeCharacter Or lngType = wdStyleTypeParagraph Then
             '(skipped) objStyle.AutomaticallyUpdate = False
@@ -449,7 +624,7 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                     objStyle.NextParagraphStyle = strSpec
                 End If
             ElseIf Left(strSpecLow, 13) = "space between" _
-                Or Left(strSpecLow, 17) = "add space between" _
+                Or Left(strSpecLow, 9) = "add space" _
                 Then '-------------------------------------------- space between
                 objStyle.NoSpaceBetweenParagraphsOfSameStyle = False
             ElseIf Left(strSpecLow, 16) = "no space between" _
@@ -501,7 +676,9 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 Or strSpecLow = "no italic" Then
                 objFont.Italic = False
             ElseIf strSpecLow = "bold and italic" _
-                Or strSpecLow = "italic and bold" Then
+                Or strSpecLow = "italic and bold" _
+                Or strSpecLow = "bold italic" _
+                Or strSpecLow = "italic bold" Then
                 objFont.Bold = True
                 objFont.Italic = True
             ElseIf strSpecLow = "no bold or italic" _
@@ -628,21 +805,23 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 And Right(strSpecLow, 13) <> "numeral color" Then '------- color
                 strSpec = Split(strSpec, " ")(0)
                 strSpecLow = LCase(strSpec)
+                dblSpec = -1
                 If Left(strSpec, 1) = "#" Then
                     strSpec = Right(strSpec, Len(strSpec) - 1)
                     strSpec = Right(strSpec, 2) & Mid(strSpec, 3, 2) _
                         & Left(strSpec, 2)
                     dblSpec = Val("&H" & strSpec)
-                    objFont.Color = dblSpec
                 ElseIf strSpecLow = "automatic" Or strSpecLow = "auto" _
                     Or strSpecLow = "no" Then
                     dblSpec = wdColorAutomatic
-                    objFont.Color = dblSpec
                 ElseIf strSpecLow = "black" Then
                     dblSpec = wdColorBlack
-                    objFont.Color = dblSpec
                 ElseIf strSpecLow = "white" Then
                     dblSpec = wdColorWhite
+                ElseIf strSpecLow = "blue" Then
+                    dblSpec = wdColorBlue
+                End If
+                If dblSpec <> -1 Then
                     objFont.Color = dblSpec
                 End If
             ElseIf strSpecLow = "normal letterspacing" _
@@ -680,9 +859,9 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 objFormat.LeftIndent = InchesToPoints(dblSpec)
             ElseIf Right(strSpecLow, 12) = "right indent" Then
                 objFormat.RightIndent = InchesToPoints(dblSpec)
-            '(moved down) objFormat.SpaceBefore = dblSpec
+            '(postponed to the end) objFormat.SpaceBefore = dblSpec
             '(skipped) objFormat.SpaceBeforeAuto = False
-            '(moved down) objFormat.SpaceAfter = dblSpec
+            '(postponed to the end) objFormat.SpaceAfter = dblSpec
             '(skipped) objFormat.SpaceAfterAuto = False
             ElseIf Right(strSpecLow, 12) = "line spacing" Then 'line spacing
                 If Split(strSpecLow, " ")(1) = "pt" _
@@ -706,20 +885,16 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                     objFormat.LineSpacingRule = wdLineSpaceMultiple
                     objFormat.LineSpacing = LinesToPoints(dblSpec)
                 End If
-            ElseIf strSpecLow = "left aligned" _
-                Or strSpecLow = "left align" _
-                Or strSpecLow = "aligned left" _
-                Or strSpecLow = "align left" _
-                Or strSpecLow = "right aligned" _
-                Or strSpecLow = "right align" _
-                Or strSpecLow = "aligned right" _
-                Or strSpecLow = "align right" _
+            ElseIf strSpecLow = "left aligned" Or strSpecLow = "left align" _
+                Or strSpecLow = "aligned left" Or strSpecLow = "align left" _
+                Or strSpecLow = "right aligned" Or strSpecLow = "right align" _
+                Or strSpecLow = "aligned right" Or strSpecLow = "align right" _
                 Or strSpecLow = "centered" Or strSpecLow = "center" _
+                Or strSpecLow = "center align" Or strSpecLow = "align center" _
                 Or strSpecLow = "center aligned" _
                 Or strSpecLow = "aligned center" _
-                Or strSpecLow = "center align" _
-                Or strSpecLow = "align center" _
-                Or strSpecLow = "justified" Or strSpecLow = "justify" _
+                Or InStr(strSpecLow, "justify") <> 0 _
+                Or InStr(strSpecLow, "justified") <> 0 _
                 Then '-------------------------------------------- alignment
                 dblSpec = wdAlignParagraphLeft
                 If strSpecLow = "right aligned" _
@@ -733,8 +908,8 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                     Or strSpecLow = "center align" _
                     Or strSpecLow = "align center" Then
                     dblSpec = wdAlignParagraphCenter
-                ElseIf strSpecLow = "justified" Or strSpecLow = "justify" _
-                    Then
+                ElseIf InStr(strSpecLow, "justify") _
+                    Or InStr(strSpecLow, "justified") Then
                     dblSpec = wdAlignParagraphJustify
                 End If
                 objFormat.Alignment = dblSpec
@@ -791,9 +966,6 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 Or Left(strSpecLow, 24) = "allow a page break below" _
                 Then
                 objFormat.KeepWithNext = False
-            ElseIf Right(strSpecLow, 5) = "after" _
-                Or Right(strSpecLow, 5) = "below" Then '-------- space after
-                objFormat.SpaceAfter = dblSpec
             ElseIf Left(strSpecLow, 13) = "keep together" _
                 Or Left(strSpecLow, 19) = "keep lines together" _
                 Or Left(strSpecLow, 29) = "keep paragraph lines together" _
@@ -850,9 +1022,6 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 Or Left(strSpecLow, 30) = "do not require a page break ab" _
                 Then
                 objFormat.PageBreakBefore = False
-            ElseIf Right(strSpecLow, 6) = "before" _
-                Or Right(strSpecLow, 5) = "above" Then '------- space before
-                objFormat.SpaceBefore = dblSpec
             '(skipped) objFormat.NoLineNumber = False
             '(skipped) objFormat.Hyphenation = True
             '(skipped) objFormat.FirstLineIndent = InchesToPoints(0)
@@ -863,6 +1032,8 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 Else
                     objFormat.OutlineLevel = wdOutlineLevelBodyText
                 End If
+            ElseIf strSpecLow = "no outline level" Then
+                objFormat.OutlineLevel = wdOutlineLevelBodyText
             '(skipped) objFormat.CharacterUnitLeftIndent = 0
             '(skipped) objFormat.CharacterUnitRightIndent = 0
             '(skipped) objFormat.CharacterUnitFirstLineIndent = 0
@@ -928,18 +1099,17 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
                 objFormat.TabStops.ClearAll
             ElseIf strSpecLow = "center tab" _
                 Or strSpecLow = "centered tab" Then
-                dblSpec = ActiveDocument.PageSetup.PageWidth _
-                    - ActiveDocument.PageSetup.LeftMargin _
-                    - ActiveDocument.PageSetup.RightMargin _
-                    - objFormat.LeftIndent - objFormat.RightIndent
+                With objActiveDocument.PageSetup
+                    dblSpec = .PageWidth - .LeftMargin - .RightMargin
+                End With
                 objFormat.TabStops.Add Position:=(dblSpec / 2), _
                     Alignment:=wdAlignTabCenter, _
                     Leader:=wdTabLeaderSpaces
             ElseIf strSpecLow = "right tab" Then
-                dblSpec = ActiveDocument.PageSetup.PageWidth _
-                    - ActiveDocument.PageSetup.LeftMargin _
-                    - ActiveDocument.PageSetup.RightMargin _
-                    - objFormat.LeftIndent - objFormat.RightIndent
+                With objActiveDocument.PageSetup
+                    dblSpec = .PageWidth - .LeftMargin - .RightMargin _
+                        - objFormat.RightIndent
+                End With
                 objFormat.TabStops.Add Position:=dblSpec, _
                     Alignment:=wdAlignTabRight, _
                     Leader:=wdTabLeaderSpaces
@@ -958,7 +1128,55 @@ Private Sub vbaDefineOneStyle(ByVal strStyle As String, arrSpecs() As String)
             End If
         End If
     Next lngSpec
+    
+'-------'Applies some specifications last, which seems to be necessary.
+    
+    'Again, looks at each specification in the array.
+    For lngSpec = 1 To UBound(arrSpecs)
+        strSpec = arrSpecs(lngSpec)
+        strSpecLow = LCase(strSpec)
+        dblSpec = Val(strSpec)
+        
+        'Applies the space before and after paragraphs.
+        If lngType = wdStyleTypeParagraph Then
+            If ((Right(strSpecLow, 5) = "after" _
+                Or Right(strSpecLow, 5) = "below") _
+                And InStr(strSpecLow, "page break") = 0) _
+                Or Right(strSpecLow, 15) = "after paragraph" _
+                Or Right(strSpecLow, 15) = "below paragraph" _
+                Or Right(strSpecLow, 16) = "after paragraphs" _
+                Or Right(strSpecLow, 16) = "below paragraphs" _
+                Or Right(strSpecLow, 19) = "after the paragraph" _
+                Or Right(strSpecLow, 19) = "below the paragraph" _
+                Or Right(strSpecLow, 20) = "after the paragraphs" _
+                Or Right(strSpecLow, 20) = "below the paragraphs" _
+                Or Right(strSpecLow, 20) = "after each paragraph" _
+                Or Right(strSpecLow, 20) = "below each paragraph" _
+                Then '------------------------------------------ space after
+                objFormat.SpaceAfter = dblSpec
+            '(skipped) objFormat.SpaceAfterAuto = False
+            ElseIf ((Right(strSpecLow, 6) = "before" _
+                Or Right(strSpecLow, 5) = "above") _
+                And InStr(strSpecLow, "page break") = 0) _
+                Or Right(strSpecLow, 16) = "before paragraph" _
+                Or Right(strSpecLow, 15) = "above paragraph" _
+                Or Right(strSpecLow, 17) = "before paragraphs" _
+                Or Right(strSpecLow, 16) = "above paragraphs" _
+                Or Right(strSpecLow, 20) = "before the paragraph" _
+                Or Right(strSpecLow, 19) = "above the paragraph" _
+                Or Right(strSpecLow, 21) = "before the paragraphs" _
+                Or Right(strSpecLow, 20) = "above the paragraphs" _
+                Or Right(strSpecLow, 21) = "before each paragraph" _
+                Or Right(strSpecLow, 20) = "above each paragraph" _
+                Then '----------------------------------------- space before
+                objFormat.SpaceBefore = dblSpec
+            '(skipped) objFormat.SpaceBeforeAuto = False
+            End If
+        End If
+    Next lngSpec
+    
     Set objStyle = Nothing: Set objFont = Nothing: Set objFormat = Nothing
+    Set objActiveDocument = Nothing
 End Sub
 
 Private Sub vbaDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
@@ -1003,18 +1221,18 @@ Private Sub vbaDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
 '         1. LinkedStyle
         
         'Saves whether no bullet or number is specified.
-        If Right(strSpecLow, 9) = "no number" _
-            Or Right(strSpecLow, 9) = "no bullet" _
-            Or Right(strSpecLow, 9) = "no letter" _
-            Or Right(strSpecLow, 10) = "no numeral" _
-            Or Right(strSpecLow, 10) = "no numbers" _
-            Or Right(strSpecLow, 10) = "no bullets" _
-            Or Right(strSpecLow, 10) = "no letters" _
-            Or Right(strSpecLow, 11) = "no numerals" Then
+        If Left(strSpecLow, 9) = "no number" _
+            Or Left(strSpecLow, 9) = "no bullet" _
+            Or Left(strSpecLow, 9) = "no letter" _
+            Or Left(strSpecLow, 10) = "no numeral" _
+            Or Left(strSpecLow, 9) = """"" number" _
+            Or Left(strSpecLow, 9) = """"" bullet" _
+            Or Left(strSpecLow, 9) = """"" letter" _
+            Or Left(strSpecLow, 10) = """"" numeral" Then
             arrList(lngLevel, 2) = ""
             arrList(lngLevel, 4) = wdListNumberStyleNone
         
-        'Saves whether a tab or space follows (spec 3).
+        'Saves whether a tab or space or nothing follows (spec 3).
         ElseIf Right(strSpecLow, 12) = "after bullet" _
             Or Right(strSpecLow, 14) = "follows bullet" _
             Or Right(strSpecLow, 16) = "following bullet" _
@@ -1168,16 +1386,49 @@ Private Sub vbaDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             arrList(lngLevel, 10) = Split(strSpec, " ")(2)
         
         'If numbers, saves the number specs.
-        ElseIf (Right(strSpecLow, 6) = "number" _
-            Or Right(strSpecLow, 6) = "letter" _
-            Or Right(strSpecLow, 7) = "numeral" _
-            Or Right(strSpecLow, 7) = "numbers" _
-            Or Right(strSpecLow, 7) = "letters" _
-            Or Right(strSpecLow, 8) = "numerals") _
+        ElseIf (Right(strSpecLow, 7) = " number" _
+            Or Right(strSpecLow, 7) = " letter" _
+            Or Right(strSpecLow, 8) = " numeral" _
+            Or Right(strSpecLow, 8) = " numbers" _
+            Or Right(strSpecLow, 8) = " letters" _
+            Or Right(strSpecLow, 9) = " numerals") _
             And Left(strSpecLow, 8) <> "based on" _
             And Left(strSpecLow, 11) <> "followed by" Then
             'Saves the number format (spec 2).
-            strSpec = Split(strSpec, " ")(0)
+            strSpec = strSpecLow
+            If Right(strSpec, 7) = " number" _
+                Or Right(strSpec, 7) = " letter" Then
+                strSpec = Left(strSpec, Len(strSpec) - 7)
+            ElseIf Right(strSpec, 8) = " numeral" _
+                Or Right(strSpec, 8) = " numbers" _
+                Or Right(strSpec, 8) = " letters" Then
+                strSpec = Left(strSpec, Len(strSpec) - 8)
+            Else
+                strSpec = Left(strSpec, Len(strSpec) - 9)
+            End If
+            If Right(strSpec, 6) = " roman" Then
+                strSpec = Left(strSpec, Len(strSpec) - 6)
+            End If
+            If Right(strSpec, 7) = " arabic" Then
+                strSpec = Left(strSpec, Len(strSpec) - 7)
+            End If
+            If Right(strSpec, 8) = " capital" Then
+                strSpec = Left(strSpec, Len(strSpec) - 8)
+            End If
+            If Right(strSpec, 10) = " uppercase" _
+                Or Right(strSpec, 10) = " lowercase" Then
+                strSpec = Left(strSpec, Len(strSpec) - 10)
+            End If
+            If Right(strSpec, 11) = " upper-case" _
+                Or Right(strSpec, 11) = " upper case" _
+                Or Right(strSpec, 11) = " lower-case" _
+                Or Right(strSpec, 11) = " lower case" Then
+                strSpec = Left(strSpec, Len(strSpec) - 11)
+            End If
+            If Right(strSpec, 6) = " legal" Then
+                strSpec = Left(strSpec, Len(strSpec) - 6)
+            End If
+            'Was strSpec = Split(strSpec, " ")(0)
                 'Removes quotation marks.
                 If Left(strSpec, 1) = Chr(34) Then
                     strSpec = Right(strSpec, Len(strSpec) - 1)
@@ -1195,21 +1446,31 @@ Private Sub vbaDefineList(ByRef arrList() As Variant, ByVal lngLevel As Long, _
             If InStr(strSpecLow, "roman") <> 0 _
                 Or InStr(strSpecLow, "numeral") <> 0 Then
                 dblSpec = wdListNumberStyleLowercaseRoman
-            ElseIf InStr(strSpecLow, "uppercase roman") <> 0 _
+            End If
+            If InStr(strSpecLow, "uppercase roman") <> 0 _
                 Or InStr(strSpecLow, "uppercase numeral") <> 0 _
                 Or InStr(strSpecLow, "upper-case roman") <> 0 _
-                Or InStr(strSpecLow, "upper-case numeral") <> 0 Then
+                Or InStr(strSpecLow, "upper-case numeral") <> 0 _
+                Or InStr(strSpecLow, "upper case roman") <> 0 _
+                Or InStr(strSpecLow, "upper case numeral") <> 0 _
+                Or InStr(strSpecLow, "capital roman") <> 0 _
+                Or InStr(strSpecLow, "capital numeral") <> 0 Then
                 dblSpec = wdListNumberStyleUppercaseRoman
-            ElseIf InStr(strSpecLow, "letter") <> 0 Then
+            End If
+            If InStr(strSpecLow, "letter") <> 0 Then
                 dblSpec = wdListNumberStyleLowercaseLetter
-            ElseIf InStr(strSpecLow, "uppercase letter") <> 0 _
-                Or InStr(strSpecLow, "upper-case letter") <> 0 Then
+            End If
+            If InStr(strSpecLow, "uppercase letter") <> 0 _
+                Or InStr(strSpecLow, "upper-case letter") <> 0 _
+                Or InStr(strSpecLow, "upper case letter") <> 0 _
+                Or InStr(strSpecLow, "capital letter") <> 0 Then
                 dblSpec = wdListNumberStyleUppercaseLetter
-            ElseIf InStr(strSpecLow, "legal") <> 0 Then
+            End If
+            If InStr(strSpecLow, "legal") <> 0 Then
                 dblSpec = wdListNumberStyleLegal
             End If
             arrList(lngLevel, 4) = dblSpec
-
+            
         End If
     Next lngSpec
 End Sub
