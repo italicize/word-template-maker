@@ -1,0 +1,53 @@
+[Select Design > Fonts. Century Gothic for heading font. California FB for body font.]
+[Type Styles. Select Manage Styles > Set Defaults. Select 9 pt size. Select 0 pt after. Leave 1.08 for the line spacing. Click OK.]
+[Save and Open.]
+
+
+General . . . . . . . . . . . .
+Margins, 1" left, 1" right, 1.25" top, 1" bottom, 0.75" header, 0.5" footer, portrait orientation.
+Style defaults, body font, auto color, not italic, not bold, 12 pt size, 1.03 line spacing, 0 pt before, 0 pt after, 0" left indent, 0" right indent, left aligned, based on no style, followed by Body Text, space between, normal character spacing, kerning.
+Normal style, 9 pt size.
+Body Text style, 12 pt after.
+Styles gallery, Heading 1, Body Text, List Number, List Bullet, List Letter, Term.
+
+Lists . . . . . . . . . . . .
+Heading 1 style, "%1" number, 0" number indent, 0.5" text indent, headings font, 14 pt size, bold, all caps, 2.25 pt top border, 18 pt before, 0 pt after, keep with next, keep lines together, followed by Heading 2, outline level 1.
+Heading 2 style, %1.%2." number, 0" number indent, 0.5" text indent, headings font, 14 pt size, bold, 18 pt before, 0 pt after, keep with next, keep lines together, followed by List Number, outline level 2.
+List Number style, "%1.%2.%3." number, 0" number indent, 0.5" text indent, body font, don't keep with next, keep lines together, followed by the same style, no outline level.
+List Number 2 style, "%1.%2.%3.%4." number, 0.5" number indent, 1" text indent, don't keep with next, keep lines together, followed by the same style, no outline level.
+ListNumbers list, Heading 1, Heading 2, List Number, List Number 2.
+ListNumbers list defaults, auto number color, tab after number, space between items.
+
+List Bullet style, • `&#x2022;` bullet, 0.5" number indent, 1" text indent, followed by the same style.
+ListBullets list, List Bullet.
+ListBullets list defaults, auto bullet color, tab after bullet, space between.
+
+List Letter style, "(%1)" letter, lowercase roman letter, 0.5" number indent, 1" text indent, followed by the same style.
+ListLetters list, List Letter.
+ListLetters list defaults, auto bullet color, tab after bullet, space between.
+
+List Continue style, 0.5" bullet indent, 1" text indent, followed by the same style.
+List Continue 2 style, 1" bullet indent, 1.5" text indent, followed by the same style.
+ListContinues list, List Continue, List Continue 2.
+ListContinues list defaults, no bullet, tab after bullet, space between.
+
+Other styles . . . . . . . . . . . .
+Header style, body font, 9 pt size, 0 pt after, clear tabs, followed by the same style.
+Footer style, body font, 9 pt size, 0 pt after, clear tabs, right tab, followed by the same style.
+Title style, headings font, 18 pt size, 16 pt after, space between, -0.3 pt character spacing, followed by the same style.
+Hyperlink style, auto font color, no underline, based on underlying properties.
+FollowedHyperlink style, auto font color, no underline, based on underlying properties.
+Term style, character style, bold, based on underlying properties.
+
+Insert samples.
+
+
+Fixes . . . . . . . 
+Margins, 0.6" top, 0.58" bottom, 0.22" header, 0.25" footer.
+Style defaults, body font, auto color, not italic, not bold, 12 pt size, 1.03 line spacing, 0 pt before, 12 pt after, 0" left indent, 0" right indent, left aligned, based on no style, followed by Body Text, normal character spacing, kerning.
+Header style, DIN OT Medium font, 11 pt size, 3 pt after, white font color, clear tabs, 1" left tab, right tab, followed by the same style.
+Footer style, DIN OT Medium font, 11 pt size, 0 pt after, white font color, clear tabs, center tab, right tab, followed by the same style.
+Title style, DIN OT Medium font, 18 pt size, 16 pt after, space between, white font color, 1" left tab, -0.3 pt character spacing, left align, followed by the same style.
+
+Citation style, character style, 8 pt size, italic, based on underlying properties.
+
