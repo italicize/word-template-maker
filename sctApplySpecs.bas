@@ -11,101 +11,8 @@ Const strDefaultStyleGallery As String = "Normal, No Spacing, Heading 1, " _
     & "Intense Reference, Book Title, List Paragraph, Caption, TOC Heading"
     'Those built-in styles appear in the default style gallery in Word 2016.
 
-Sub TestOfCommandParser()
-    Call vbaAskForStyleDescriptions
-
-'    Dim strDesc As String, strDescLow As String
-'    strDesc = _
-'        LongInputBox("Describe the style changes or other instructions.", _
-'        "Input, please")
-'    If strDesc = "" Then Exit Sub
-'
-'    strDesc = RemoveExtraSpaces(strDesc)
-'    strDesc = CutLeftOrRight(strDesc, ".", wdRight)
-'    strDesc = CutLeftOrRight(strDesc, "call ", wdLeft)
-'    strDesc = CutLeftOrRight(strDesc, "run macro ", wdLeft)
-'    strDesc = CutLeftOrRight(strDesc, "run ", wdLeft)
-'
-'    If "GenericTestMacro" = strDesc Then
-'        GenericTestMacro
-'    ElseIf "GenericTestMacro" = strDesc Then
-'        vbaApplyStyleDescriptions strDesc 'Why doesn't this work?
-'    End If
-End Sub
-
-'Function RemoveExtraSpaces(ByVal strString As String) As String
-'    Dim lngA As Long
-'    strString = Trim(strString)
-'    For lngA = 1 To 3
-'        strString = _
-'            Replace(Replace(Replace(Replace(Replace(strString, _
-'            "      ", " "), "     ", " "), "    ", " "), "   ", " "), "  ", " ")
-'    Next lngA
-'    RemoveExtraSpaces = strString
-'End Function
-'
-'Function ReplaceWhiteSpaceWithSpaces(ByVal strString As String) As String
-'    strString = Replace(strString, vbTab, " ")
-''Add other kinds of white space, like nonbreaking spaces.
-'    ReplaceWhiteSpaceWithSpaces = strString
-'End Function
-'
-'Function TrimWS(ByVal str As String) As String
-''Source: https://stackoverflow.com/questions/25184019/trim-all-types-of-whitespace-including-tabs
-'    str = Trim(str)
-'    Do Until Not Left(str, 1) = Chr(9)
-'        str = Trim(Mid(str, 2, Len(str) - 1))
-'        str = Trim(str)
-'    Loop
-'    Do Until Not Right(str, 1) = Chr(9)
-'        str = Trim(Left(str, Len(str) - 1))
-'        str = Trim(str)
-'    Loop
-'    TrimWS = str
-'End Function
-'
-'Function CutLeftOrRight(ByVal strString As String, ByVal strExtra As String, _
-'    ByVal lngPlace As Long) As String
-'    Dim strLowercaseString As String, strLowercaseExtra As String
-'    strLowercaseString = LCase(strString)
-'    strLowercaseExtra = LCase(strExtra)
-'    If lngPlace = wdLeft Then
-'        If Left(strLowercaseString, Len(strExtra)) = strLowercaseExtra Then
-'            CutLeftOrRight = Right(strString, Len(strString) - Len(strExtra))
-'        Else
-'            CutLeftOrRight = strString
-'        End If
-'    ElseIf lngPlace = wdRight Then
-'        If Right(strLowercaseString, Len(strExtra)) = strLowercaseExtra Then
-'            CutLeftOrRight = Left(strString, Len(strString) - Len(strExtra))
-'        Else
-'            CutLeftOrRight = strString
-'        End If
-'    Else
-'        CutLeftOrRight = strString
-'    End If
-'End Function
-
-Public Sub vbaAskForStyleDescriptions()
-    Dim strDesc As String
-    'Asks for style descriptions.
-    strDesc = _
-        LongInputBox("Describe the style changes or other instructions.", _
-        "Settings to change")
-    If strDesc = "" Then Exit Sub
-    vbaApplyStyleDescriptions strDesc
-End Sub
-
-Public Sub vbaApplyStyleDescriptions(ByVal strDesc As String) '...as of 05/28/22
-'Maybe add shading. See TrialOfShading.
-'Maybe add Remove from Style Gallery.
-'Maybe add Assign Value. Maybe reassign values to styles removed from gallery.
-'Maybe add right 1" tab. Now it's only 1" right tab.
-'Make it work with tab-delimited specifications.
-'Investigate why 6 pt after didn't work as a default.
-'Investigate why a List Number heading didn't have an indent of 0.5" for number.
-'Explain that "10 pt font" needs to say "10 pt size" or "10 pt font size"
-    Dim arrParas() As String ', strDesc As String
+Public Sub vbaApplyStyleDescriptions() '...as of 06/02/22
+    Dim arrParas() As String, strDesc As String
     Dim strPara As String, lngPara As Long, lngListPara As Long
     Dim strLabel As String, strLabelLow As String
     Dim arrSpecs() As String, strSpec As String
@@ -117,7 +24,8 @@ Public Sub vbaApplyStyleDescriptions(ByVal strDesc As String) '...as of 05/28/22
     Dim objListTemplate As ListTemplate
     Dim objActiveDocument As Document: Set objActiveDocument = ActiveDocument
     
-    'Saves every line in an array.
+    'Saves every line of the style descriptions in an array.
+    strDesc = objActiveDocument.Content.Text
     arrParas = vbaSaveParagraphsInAnArray(strDesc)
     'Reads each line of the style descriptions.
     For lngPara = LBound(arrParas) To UBound(arrParas)
@@ -519,7 +427,7 @@ Function vbaSaveParagraphsInAnArray(ByVal varDesc As Variant) _
     As String()
     Dim arrParas() As String, lngPara As Long, strPara As String
     'Saves paragraphs in an array.
-    arrParas = Split(varDesc, vbCrLf)
+    arrParas = Split(varDesc, chr(13))
     'Cleans up the text in the paragraphs.
     For lngPara = LBound(arrParas) To UBound(arrParas)
         strPara = CStr(arrParas(lngPara))
