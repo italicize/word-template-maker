@@ -1,0 +1,57 @@
+[Select Design > Fonts. Arial for heading font and body font.]
+[Type Styles. Select Manage Styles > Set Defaults. Select 10 pt size. Select 0 pt after. Leave 1.04 for the line spacing. Click OK.]
+[Save and Open.]
+
+Insert samples.
+
+General . . . . . . . . . . . .
+Margins, 1" left, 1" right, 1" top, 1" bottom, 0.33" header, 0.42" pc footer, portrait orientation.
+Style defaults, body font, auto font color, not italic, not bold, 10 pt size, 1.04 line spacing, 0 pt before, 12 pt after, 0" left indent, 0" right indent, justified, based on no style, followed by the same style, space between, normal character spacing, kerning.
+Normal style, left align, 0 pt after.
+Body Text style.
+Styles gallery, List Number, List Number 2, List Number 3, Body Text, List Bullet, List Continue, List Letter, Term.
+
+Lists . . . . . . . . . . . .
+List Number style, "%1" number, 11 pt size, bold, 18 pt before, keep with next, keep lines together, 0.5" text indent, followed by List Number 2, outline level 1.
+List Number 2 style, %1.%2" number, followed by List Number 3.
+List Number 3 style, "%1.%2.%3" number.
+List Number 4 style, "%1.%2.%3.%4" number.
+List Number 5 style, "%1.%2.%3.%4.%5" number.
+ListNumbers list, List Number, List Number 2, List Number 3, List Number 4, List Number 5.
+ListNumbers list defaults, auto number color, bold number, tab after number, 0" number indent, 0" text indent, space between, no outline level.
+
+List Bullet style, • `&#x2022;` bullet, 0" number indent, 0.25" text indent.
+ListBullets list, List Bullet.
+ListBullets list defaults, auto bullet color, tab after bullet, space between.
+
+List Letter style, "Annex %1 – " uppercase letter, bold, 0" number indent, 0.5" text indent, nothing after letter, followed by Body Text.
+List Letter 2 style, "%1-%2" number, 0" number indent, 0".5 text indent, tab after letter, followed by List Letter 3.
+List Letter 3 style, "%3)" number, 0.5" number indent, 1" text indent, tab after letter.
+List Letter 4 style, "" number, 1.5" number indent, 1.5" text indent, nothing after number.
+ListLetters list, List Letter, List Letter 2, List Letter 3, List Letter 4.
+ListLetters list defaults, auto bullet color, bold number, space between.
+
+List Continue style, 0" bullet indent, 0.25" text indent, followed by the same style.
+ListContinues list, List Continue.
+ListContinues list defaults, no bullet, tab after bullet, space between.
+
+Other styles . . . . . . . . . . . .
+Header style, Arial Narrow font, 9 pt size, 0 pt after, clear tabs, followed by the same style.
+Footer style, body font, 8 pt size, 0 pt after, clear tabs, center tab, right tab, followed by the same style.
+Title style, headings font, bold, 18 pt size, space between, followed by Subtitle.
+Subtitle style, headings font, bold, italic, followed by Heading 1.
+Hyperlink style, auto font color, no underline, based on underlying properties.
+FollowedHyperlink style, auto font color, no underline, based on underlying properties.
+Term style, character style, bold, based on underlying properties.
+
+Insert samples.
+
+
+Fixes . . . . . . . 
+Margins, 0.6" top, 0.58" bottom, 0.22" header, 0.25" footer.
+Style defaults, body font, auto color, not italic, not bold, 12 pt size, 1.03 line spacing, 0 pt before, 12 pt after, 0" left indent, 0" right indent, left aligned, based on no style, followed by Body Text, normal character spacing, kerning.
+Header style, DIN OT Medium font, 11 pt size, 3 pt after, white font color, clear tabs, 1" left tab, right tab, followed by the same style.
+Footer style, DIN OT Medium font, 11 pt size, 0 pt after, white font color, clear tabs, center tab, right tab, followed by the same style.
+Title style, DIN OT Medium font, 18 pt size, 16 pt after, space between, white font color, 1" left tab, -0.3 pt character spacing, left align, followed by the same style.
+
+Citation style, character style, 8 pt size, italic, based on underlying properties.
